@@ -10,7 +10,7 @@
 package main
 
 import (
-	"github.com/AlecRandazzo/GoFor/pkg/gofor"
+	mft "github.com/AlecRandazzo/Gofor-MFT-Parser"
 	log "github.com/sirupsen/logrus"
 	"os"
 )
@@ -23,7 +23,7 @@ func init() {
 }
 
 func main() {
-	err := gofor.ParseMFT("MFT", "out.csv")
+	err := mft.ParseMFT("MFT", "out.csv")
 	if err != nil {
 		log.Fatal(err)
 	}
