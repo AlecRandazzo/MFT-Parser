@@ -20,13 +20,13 @@ func TestMasterFileTableRecord_getRecordHeader(t *testing.T) {
 
 	tests := []struct {
 		name                string
-		mftRecord           *masterFileTableRecord
+		mftRecord           *MasterFileTableRecord
 		wantRecordNumber    uint32
 		wantAttributeOffset uint16
 	}{
 		{
 			name: "Testing with MFT record 0.",
-			mftRecord: &masterFileTableRecord{
+			mftRecord: &MasterFileTableRecord{
 				MftRecordBytes: mftBytes,
 			},
 			wantRecordNumber:    0,
@@ -48,13 +48,13 @@ func TestMasterFileTableRecord_getHeaderFlags(t *testing.T) {
 
 	tests := []struct {
 		name              string
-		mftRecord         *masterFileTableRecord
+		mftRecord         *MasterFileTableRecord
 		wantFlagDeleted   bool
 		wantFlagDirectory bool
 	}{
 		{
 			name: "Testing with MFT record 0.",
-			mftRecord: &masterFileTableRecord{
+			mftRecord: &MasterFileTableRecord{
 				MftRecordBytes: mftBytes,
 			},
 			wantFlagDeleted:   false,
@@ -64,7 +64,7 @@ func TestMasterFileTableRecord_getHeaderFlags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.mftRecord.getHeaderFlags()
-			assert.Equal(t, tt.wantFlagDirectory, tt.mftRecord.RecordHeader.FlagDirectory, "The directory flags should be equal.")
+			assert.Equal(t, tt.wantFlagDirectory, tt.mftRecord.RecordHeader.FlagDirectory, "The Directory flags should be equal.")
 			assert.Equal(t, tt.wantFlagDeleted, tt.mftRecord.RecordHeader.FlagDeleted, "The deleted flags should be equal.")
 		})
 	}

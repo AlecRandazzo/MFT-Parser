@@ -20,7 +20,7 @@ import (
 	"sync"
 )
 
-func (file mftFile) MftToCSV(outFileName string, waitgroup *sync.WaitGroup) (err error) {
+func (file MftFile) MftToCSV(outFileName string, waitgroup *sync.WaitGroup) (err error) {
 	outFile, err := os.Create(outFileName)
 	if err != nil {
 		err = errors.Wrapf(err, "ParseMFT(): failed to create output file %s", outFileName)
@@ -30,7 +30,7 @@ func (file mftFile) MftToCSV(outFileName string, waitgroup *sync.WaitGroup) (err
 	csvWriter.Comma = '|'
 	csvHeader := []string{
 		"Record Number",
-		"directory Flag",
+		"Directory Flag",
 		"System File Flag",
 		"Hidden Flag",
 		"Read-only Flag",
@@ -55,7 +55,7 @@ func (file mftFile) MftToCSV(outFileName string, waitgroup *sync.WaitGroup) (err
 	openChannel := true
 	for openChannel != false {
 		var csvRow []string
-		var mftRecord masterFileTableRecord
+		var mftRecord MasterFileTableRecord
 		mftRecord, openChannel = <-file.outputChannel
 		for _, record := range mftRecord.FileNameAttributes {
 			if strings.Contains(record.FileNamespace, "WIN32") == true || strings.Contains(record.FileNamespace, "POSIX") {
@@ -69,12 +69,12 @@ func (file mftFile) MftToCSV(outFileName string, waitgroup *sync.WaitGroup) (err
 				physicalFileSize := strconv.FormatUint(record.PhysicalFileSize, 10)
 				csvRow = []string{
 					recordNumber, //Record Number
-					strconv.FormatBool(mftRecord.RecordHeader.FlagDirectory), //directory Flag
+					strconv.FormatBool(mftRecord.RecordHeader.FlagDirectory), //Directory Flag
 					strconv.FormatBool(record.FileNameFlags.System),          //System file flag
 					strconv.FormatBool(record.FileNameFlags.Hidden),          //Hidden flag
 					strconv.FormatBool(record.FileNameFlags.ReadOnly),        //Read only flag
 					strconv.FormatBool(mftRecord.RecordHeader.FlagDeleted),   //Deleted Flag
-					fileDirectory,    //File directory
+					fileDirectory,    //File Directory
 					record.FileName,  //File Name
 					physicalFileSize, // File Size
 					mftRecord.StandardInformationAttributes.SiCreated,  //File Created

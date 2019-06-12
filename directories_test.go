@@ -21,12 +21,12 @@ func TestMasterFileTableRecord_quickDirectoryCheck(t *testing.T) {
 
 	tests := []struct {
 		name              string
-		mftRecord         *masterFileTableRecord
+		mftRecord         *MasterFileTableRecord
 		wantFlagDirectory bool
 	}{
 		{
 			name: "Testing MFT record 5",
-			mftRecord: &masterFileTableRecord{
+			mftRecord: &MasterFileTableRecord{
 				MftRecordBytes: mftBytes,
 			},
 			wantFlagDirectory: true,
@@ -43,7 +43,7 @@ func TestMasterFileTableRecord_quickDirectoryCheck(t *testing.T) {
 func Test_createDirectoryList(t *testing.T) {
 	type args struct {
 		inboundBuffer        *chan []byte
-		directoryListChannel *chan map[uint64]directory
+		directoryListChannel *chan map[uint64]Directory
 		waitGroup            *sync.WaitGroup
 	}
 	tests := []struct {
@@ -61,12 +61,12 @@ func Test_createDirectoryList(t *testing.T) {
 
 func TestMftFile_combineDirectoryInformation(t *testing.T) {
 	type args struct {
-		directoryListChannel        *chan map[uint64]directory
+		directoryListChannel        *chan map[uint64]Directory
 		waitForDirectoryCombination *sync.WaitGroup
 	}
 	tests := []struct {
 		name string
-		file *mftFile
+		file *MftFile
 		args args
 	}{
 		// TODO: Add test cases.
@@ -80,7 +80,7 @@ func TestMftFile_combineDirectoryInformation(t *testing.T) {
 
 func TestVolumeHandle_combineDirectoryInformation(t *testing.T) {
 	type args struct {
-		directoryListChannel        *chan map[uint64]directory
+		directoryListChannel        *chan map[uint64]Directory
 		waitForDirectoryCombination *sync.WaitGroup
 	}
 	tests := []struct {
@@ -100,7 +100,7 @@ func TestVolumeHandle_combineDirectoryInformation(t *testing.T) {
 func TestMftFile_BuildDirectoryTree(t *testing.T) {
 	tests := []struct {
 		name    string
-		file    *mftFile
+		file    *MftFile
 		wantErr bool
 	}{
 		// TODO: Add test cases.
@@ -108,7 +108,7 @@ func TestMftFile_BuildDirectoryTree(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			if err := tt.file.BuildDirectoryTree(); (err != nil) != tt.wantErr {
-				t.Errorf("mftFile.BuildDirectoryTree() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("MftFile.BuildDirectoryTree() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}

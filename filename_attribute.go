@@ -16,7 +16,7 @@ import (
 	"strings"
 )
 
-type fileNameAttributes struct {
+type FileNameAttributes struct {
 	FnCreated               string
 	FnModified              string
 	FnAccessed              string
@@ -29,13 +29,13 @@ type fileNameAttributes struct {
 	ParentDirSequenceNumber uint16
 	LogicalFileSize         uint64
 	PhysicalFileSize        uint64
-	FileNameFlags           fileNameFlags
+	FileNameFlags           FileNameFlags
 	FileNameLength          byte
 	FileNamespace           string
 	FileName                string
 }
 
-type fileNameFlags struct {
+type FileNameFlags struct {
 	ReadOnly          bool
 	Hidden            bool
 	System            bool
@@ -53,7 +53,7 @@ type fileNameFlags struct {
 	IndexView         bool
 }
 
-func (mftRecord *masterFileTableRecord) GetFileNameAttributes() (err error) {
+func (mftRecord *MasterFileTableRecord) GetFileNameAttributes() (err error) {
 	const codeFileName = 0x30
 
 	const offsetAttributeSize = 0x04
@@ -105,7 +105,7 @@ func (mftRecord *masterFileTableRecord) GetFileNameAttributes() (err error) {
 			if len(attribute.AttributeBytes) < 0x44 {
 				return
 			}
-			var fileNameAttributes fileNameAttributes
+			var fileNameAttributes FileNameAttributes
 			fileNameAttributes.AttributeSize = binary.LittleEndian.Uint32(attribute.AttributeBytes[offsetAttributeSize : offsetAttributeSize+lengthAttributeSize])
 
 			switch attribute.AttributeBytes[offsetResidentFlag] {
@@ -192,7 +192,7 @@ func (mftRecord *masterFileTableRecord) GetFileNameAttributes() (err error) {
 	return
 }
 
-func resolveFileFlags(flagBytes []byte) (parsedFlags fileNameFlags) {
+func resolveFileFlags(flagBytes []byte) (parsedFlags FileNameFlags) {
 	unparsedFlags := binary.LittleEndian.Uint32(flagBytes)
 
 	//init values

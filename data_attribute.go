@@ -16,40 +16,40 @@ import (
 	"strconv"
 )
 
-type residentDataAttributes struct {
+type ResidentDataAttributes struct {
 	ResidentData []byte
 }
 
-type nonResidentDataAttributes struct {
+type NonResidentDataAttributes struct {
 	StartingVCN   int
 	EndingVCN     int
 	OffsetDataRun int8
 	AllocatedSize uint64
 	RealSize      uint64
-	DataRuns      map[int]dataRun
+	DataRuns      map[int]DataRun
 }
 
-type rawDataRun struct {
+type RawDataRun struct {
 	NumberOrder      int
 	ClusterOffset    int64
 	NumberOfClusters int64
 }
 
-type rawDataRuns map[int]rawDataRun
+type RawDataRunList map[int]RawDataRun
 
-type dataRun struct {
+type DataRun struct {
 	AbsoluteOffset int64
 	Length         int64
 }
 
-type dataAttributes struct {
+type DataAttributes struct {
 	TotalSize                 uint8
 	FlagResident              bool
-	ResidentDataAttributes    residentDataAttributes
-	NonResidentDataAttributes nonResidentDataAttributes
+	ResidentDataAttributes    ResidentDataAttributes
+	NonResidentDataAttributes NonResidentDataAttributes
 }
 
-func (mftRecord *masterFileTableRecord) GetDataAttribute() (err error) {
+func (mftRecord *MasterFileTableRecord) GetDataAttribute() (err error) {
 	const codeData = 0x80
 	const offsetResidentFlag = 0x08
 
@@ -88,7 +88,7 @@ func (mftRecord *masterFileTableRecord) GetDataAttribute() (err error) {
 	return
 }
 
-func getResidentDataAttribute(attributeBytes []byte) (residentDataAttributes residentDataAttributes, err error) {
+func getResidentDataAttribute(attributeBytes []byte) (residentDataAttributes ResidentDataAttributes, err error) {
 	const offsetResidentData = 0x18
 
 	defer func() {
@@ -106,7 +106,7 @@ func getResidentDataAttribute(attributeBytes []byte) (residentDataAttributes res
 	return
 }
 
-func getNonResidentDataAttribute(attributeBytes []byte, bytesPerCluster int64) (nonResidentDataAttributes nonResidentDataAttributes, err error) {
+func getNonResidentDataAttribute(attributeBytes []byte, bytesPerCluster int64) (nonResidentDataAttributes NonResidentDataAttributes, err error) {
 	const offsetDataRunOffset = 0x20
 
 	defer func() {
@@ -139,7 +139,7 @@ func getNonResidentDataAttribute(attributeBytes []byte, bytesPerCluster int64) (
 	return
 }
 
-func getDataRuns(dataRunBytes []byte, bytesPerCluster int64) (dataRuns map[int]dataRun) {
+func getDataRuns(dataRunBytes []byte, bytesPerCluster int64) (dataRuns map[int]DataRun) {
 	defer func() {
 		if r := recover(); r != nil {
 			return
@@ -151,8 +151,8 @@ func getDataRuns(dataRunBytes []byte, bytesPerCluster int64) (dataRuns map[int]d
 		See the following for a good write up on data runs: https://homepage.cs.uri.edu/~thenry/csc487/video/66_NTFS_Data_Runs.pdf
 	*/
 	// Initialize a few variables
-	rawDataRun := rawDataRun{}
-	rawDataRuns := make(rawDataRuns)
+	rawDataRun := RawDataRun{}
+	rawDataRuns := make(RawDataRunList)
 	offsetTracker := 0
 	runCounter := 0
 
@@ -207,11 +207,11 @@ func getDataRuns(dataRunBytes []byte, bytesPerCluster int64) (dataRuns map[int]d
 	}
 
 	// Resolve Data Runs
-	dataRuns = make(map[int]dataRun)
+	dataRuns = make(map[int]DataRun)
 	offset := int64(0)
 	for i := 0; i < len(rawDataRuns); i++ {
 		offset = offset + (rawDataRuns[i].ClusterOffset * bytesPerCluster)
-		dataRuns[i] = dataRun{
+		dataRuns[i] = DataRun{
 			AbsoluteOffset: offset,
 			Length:         rawDataRuns[i].NumberOfClusters * bytesPerCluster,
 		}

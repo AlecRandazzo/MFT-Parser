@@ -14,7 +14,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-type standardInformationAttributes struct {
+type StandardInformationAttributes struct {
 	SiCreated    string
 	SiModified   string
 	SiAccessed   string
@@ -22,7 +22,7 @@ type standardInformationAttributes struct {
 	FlagResident bool
 }
 
-func (mftRecord *masterFileTableRecord) GetStandardInformationAttribute() (err error) {
+func (mftRecord *MasterFileTableRecord) GetStandardInformationAttribute() (err error) {
 	const codeStandardInformation = 0x10
 
 	const offsetResidentFlag = 0x08

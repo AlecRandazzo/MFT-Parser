@@ -22,7 +22,7 @@ type AttributeInfo struct {
 }
 
 // Get MFT record attributes list.
-func (mftRecord *masterFileTableRecord) GetAttributeList() (err error) {
+func (mftRecord *MasterFileTableRecord) GetAttributeList() (err error) {
 	const offsetAttributeSize = 0x04
 	const lengthAttributeSize = 0x04
 

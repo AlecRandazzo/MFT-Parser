@@ -11,14 +11,14 @@ package GoFor_MFT_Parser
 
 import "encoding/binary"
 
-type recordHeader struct {
+type RecordHeader struct {
 	AttributesOffset uint16
 	RecordNumber     uint32
 	FlagDeleted      bool
 	FlagDirectory    bool
 }
 
-func (mftRecord *masterFileTableRecord) GetRecordHeader() {
+func (mftRecord *MasterFileTableRecord) GetRecordHeader() {
 	const offsetAttributesOffset = 0x14
 
 	const offsetRecordNumber = 0x2c
@@ -33,7 +33,7 @@ func (mftRecord *masterFileTableRecord) GetRecordHeader() {
 	return
 }
 
-func (mftRecord *masterFileTableRecord) getHeaderFlags() {
+func (mftRecord *MasterFileTableRecord) getHeaderFlags() {
 	const offsetRecordFlag = 0x16
 	const codeDeletedFile = 0x00
 	//const codeActiveFile = 0x01

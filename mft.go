@@ -18,25 +18,25 @@ import (
 	"sync"
 )
 
-type masterFileTableRecord struct {
+type MasterFileTableRecord struct {
 	bytesPerCluster               int64
-	RecordHeader                  recordHeader
-	StandardInformationAttributes standardInformationAttributes
-	FileNameAttributes            []fileNameAttributes
-	DataAttributes                dataAttributes
+	RecordHeader                  RecordHeader
+	StandardInformationAttributes StandardInformationAttributes
+	FileNameAttributes            []FileNameAttributes
+	DataAttributes                DataAttributes
 	MftRecordBytes                []byte
 	AttributeInfo                 []AttributeInfo
 }
 
-type mftFile struct {
+type MftFile struct {
 	FileHandle        *os.File
 	MappedDirectories map[uint64]string
-	outputChannel     chan masterFileTableRecord
+	outputChannel     chan MasterFileTableRecord
 }
 
 // Parse an already extracted MFT and write the results to a file.
 func ParseMFT(mftFilePath, outFileName string) (err error) {
-	file := mftFile{}
+	file := MftFile{}
 	file.FileHandle, err = os.Open(mftFilePath)
 	if err != nil {
 		err = errors.Wrapf(err, "failed to open MFT file %s", mftFilePath)
@@ -49,7 +49,7 @@ func ParseMFT(mftFilePath, outFileName string) (err error) {
 		return
 	}
 
-	file.outputChannel = make(chan masterFileTableRecord, 100)
+	file.outputChannel = make(chan MasterFileTableRecord, 100)
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(1)
 	go file.MftToCSV(outFileName, &waitGroup)
@@ -62,7 +62,7 @@ func ParseMFT(mftFilePath, outFileName string) (err error) {
 			err = nil
 			break
 		}
-		mftRecord := masterFileTableRecord{}
+		mftRecord := MasterFileTableRecord{}
 		mftRecord.MftRecordBytes = buffer
 		err = mftRecord.ParseMFTRecord()
 		if err != nil {
@@ -86,7 +86,7 @@ func ParseMFT(mftFilePath, outFileName string) (err error) {
 }
 
 // Parse the bytes of an MFT record
-func (mftRecord *masterFileTableRecord) ParseMFTRecord() (err error) {
+func (mftRecord *MasterFileTableRecord) ParseMFTRecord() (err error) {
 
 	recordHeaderPresent := mftRecord.CheckForRecordHeader()
 	if recordHeaderPresent == false {
@@ -124,7 +124,7 @@ func (mftRecord *masterFileTableRecord) ParseMFTRecord() (err error) {
 }
 
 // Trims off slack space after end sequence 0xffffffff
-func (mftRecord *masterFileTableRecord) TrimMFTRecordSlackSpace() {
+func (mftRecord *MasterFileTableRecord) TrimMFTRecordSlackSpace() {
 	lenMftRecordBytes := len(mftRecord.MftRecordBytes)
 	mftRecordEndByteSequence := []byte{0xff, 0xff, 0xff, 0xff}
 	for i := 0; i < (lenMftRecordBytes - 4); i++ {
@@ -136,7 +136,7 @@ func (mftRecord *masterFileTableRecord) TrimMFTRecordSlackSpace() {
 }
 
 // Verifies that the bytes receives is actually an MFT record. All MFT records start with "FILE0".
-func (mftRecord *masterFileTableRecord) CheckForRecordHeader() (recordHeaderPresent bool) {
+func (mftRecord *MasterFileTableRecord) CheckForRecordHeader() (recordHeaderPresent bool) {
 	const offsetRecordMagicNumber = 0x00
 	const lengthRecordMagicNumber = 0x05
 	valueRecordHeader := string(mftRecord.MftRecordBytes[offsetRecordMagicNumber : offsetRecordMagicNumber+lengthRecordMagicNumber])
