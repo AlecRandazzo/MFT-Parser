@@ -76,7 +76,7 @@ func (mftRecord *MasterFileTableRecord) GetDataAttribute() (err error) {
 				return
 			} else {
 				mftRecord.DataAttributes.FlagResident = false
-				mftRecord.DataAttributes.NonResidentDataAttributes, err = getNonResidentDataAttribute(attribute.AttributeBytes, mftRecord.bytesPerCluster)
+				mftRecord.DataAttributes.NonResidentDataAttributes, err = getNonResidentDataAttribute(attribute.AttributeBytes, mftRecord.BytesPerCluster)
 				if err != nil {
 					err = errors.Wrap(err, "failed to parse non resident data attribute")
 					return

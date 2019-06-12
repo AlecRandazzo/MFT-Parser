@@ -19,7 +19,7 @@ import (
 )
 
 type MasterFileTableRecord struct {
-	bytesPerCluster               int64
+	BytesPerCluster               int64
 	RecordHeader                  RecordHeader
 	StandardInformationAttributes StandardInformationAttributes
 	FileNameAttributes            []FileNameAttributes
@@ -31,7 +31,7 @@ type MasterFileTableRecord struct {
 type MftFile struct {
 	FileHandle        *os.File
 	MappedDirectories map[uint64]string
-	outputChannel     chan MasterFileTableRecord
+	OutputChannel     chan MasterFileTableRecord
 }
 
 // Parse an already extracted MFT and write the results to a file.
@@ -49,7 +49,7 @@ func ParseMFT(mftFilePath, outFileName string) (err error) {
 		return
 	}
 
-	file.outputChannel = make(chan MasterFileTableRecord, 100)
+	file.OutputChannel = make(chan MasterFileTableRecord, 100)
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(1)
 	go file.MftToCSV(outFileName, &waitGroup)
@@ -73,14 +73,14 @@ func ParseMFT(mftFilePath, outFileName string) (err error) {
 			offset += 1024
 			continue
 		}
-		file.outputChannel <- mftRecord
+		file.OutputChannel <- mftRecord
 		offset += 1024
 		if len(mftRecord.FileNameAttributes) == 0 {
 			continue
 		}
 
 	}
-	close(file.outputChannel)
+	close(file.OutputChannel)
 	waitGroup.Wait()
 	return
 }

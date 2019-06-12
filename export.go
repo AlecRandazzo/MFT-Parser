@@ -56,7 +56,7 @@ func (file MftFile) MftToCSV(outFileName string, waitgroup *sync.WaitGroup) (err
 	for openChannel != false {
 		var csvRow []string
 		var mftRecord MasterFileTableRecord
-		mftRecord, openChannel = <-file.outputChannel
+		mftRecord, openChannel = <-file.OutputChannel
 		for _, record := range mftRecord.FileNameAttributes {
 			if strings.Contains(record.FileNamespace, "WIN32") == true || strings.Contains(record.FileNamespace, "POSIX") {
 				var fileDirectory string
