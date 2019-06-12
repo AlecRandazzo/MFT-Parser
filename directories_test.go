@@ -78,25 +78,6 @@ func TestMftFile_combineDirectoryInformation(t *testing.T) {
 	}
 }
 
-func TestVolumeHandle_combineDirectoryInformation(t *testing.T) {
-	type args struct {
-		directoryListChannel        *chan map[uint64]Directory
-		waitForDirectoryCombination *sync.WaitGroup
-	}
-	tests := []struct {
-		name   string
-		volume *volumeHandle
-		args   args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			tt.volume.combineDirectoryInformation(tt.args.directoryListChannel, tt.args.waitForDirectoryCombination)
-		})
-	}
-}
-
 func TestMftFile_BuildDirectoryTree(t *testing.T) {
 	tests := []struct {
 		name    string
