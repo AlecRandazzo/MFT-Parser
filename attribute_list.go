@@ -120,7 +120,7 @@ func (mftRecord *MasterFileTableRecord) GetAttributeList() (err error) {
 		attributeInfoSlice.AttributeType = mftRecord.MftRecordBytes[mftRecord.RecordHeader.AttributesOffset]
 		attributeSize := binary.LittleEndian.Uint16(mftRecord.MftRecordBytes[mftRecord.RecordHeader.AttributesOffset+offsetAttributeSize : mftRecord.RecordHeader.AttributesOffset+offsetAttributeSize+lengthAttributeSize])
 		//AttributeSize := binary.LittleEndian.Uint16(MftRecordBytes[attributeOffset+4:attributeOffset+5])
-		end := uint16(mftRecord.RecordHeader.AttributesOffset) + attributeSize
+		end := mftRecord.RecordHeader.AttributesOffset + attributeSize
 		attributeInfoSlice.AttributeBytes = mftRecord.MftRecordBytes[mftRecord.RecordHeader.AttributesOffset:end]
 
 		// Append the attribute to the attribute struct
