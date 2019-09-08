@@ -12,7 +12,6 @@ package GoFor_MFT_Parser
 import (
 	"encoding/csv"
 	"fmt"
-	"github.com/pkg/errors"
 	"log"
 	"os"
 	"strconv"
@@ -23,7 +22,7 @@ import (
 func (file MftFile) MftToCSV(outFileName string, waitgroup *sync.WaitGroup) (err error) {
 	outFile, err := os.Create(outFileName)
 	if err != nil {
-		err = errors.Wrapf(err, "ParseMFT(): failed to create output file %s", outFileName)
+		err = fmt.Errorf("ParseMFT(): failed to create output file %s: %w", outFileName, err)
 	}
 	defer outFile.Close()
 	csvWriter := csv.NewWriter(outFile)

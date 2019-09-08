@@ -11,8 +11,8 @@ package GoFor_MFT_Parser
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
-	"github.com/pkg/errors"
 	"strconv"
 )
 
@@ -55,7 +55,7 @@ func (mftRecord *MasterFileTableRecord) GetDataAttribute() (err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = errors.Errorf("Failed to parse data attribute")
+			err = errors.New("failed to parse data attribute")
 		}
 	}()
 
@@ -70,7 +70,7 @@ func (mftRecord *MasterFileTableRecord) GetDataAttribute() (err error) {
 				mftRecord.DataAttributes.FlagResident = true
 				mftRecord.DataAttributes.ResidentDataAttributes, err = getResidentDataAttribute(attribute.AttributeBytes)
 				if err != nil {
-					err = errors.Wrap(err, "failed to parse resident data attribute")
+					err = fmt.Errorf("failed to parse resident data attribute: %w", err)
 					return
 				}
 				return
@@ -78,7 +78,7 @@ func (mftRecord *MasterFileTableRecord) GetDataAttribute() (err error) {
 				mftRecord.DataAttributes.FlagResident = false
 				mftRecord.DataAttributes.NonResidentDataAttributes, err = getNonResidentDataAttribute(attribute.AttributeBytes, mftRecord.BytesPerCluster)
 				if err != nil {
-					err = errors.Wrap(err, "failed to parse non resident data attribute")
+					err = fmt.Errorf("failed to parse non resident data attribute: %w", err)
 					return
 				}
 			}
@@ -93,7 +93,7 @@ func getResidentDataAttribute(attributeBytes []byte) (residentDataAttributes Res
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = errors.Errorf("panic recovery %s, hex dump: %s", fmt.Sprint(r), hex.EncodeToString(attributeBytes))
+			err = fmt.Errorf("panic recovery %s, hex dump: %s", fmt.Sprint(r), hex.EncodeToString(attributeBytes))
 		}
 	}()
 
@@ -111,7 +111,7 @@ func getNonResidentDataAttribute(attributeBytes []byte, bytesPerCluster int64) (
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = errors.Errorf("panic recovery %s, hex dump: %s", fmt.Sprint(r), hex.EncodeToString(attributeBytes))
+			err = fmt.Errorf("panic recovery %s, hex dump: %s", fmt.Sprint(r), hex.EncodeToString(attributeBytes))
 		}
 	}()
 
@@ -132,7 +132,7 @@ func getNonResidentDataAttribute(attributeBytes []byte, bytesPerCluster int64) (
 	// Send the bytes to be parsed
 	nonResidentDataAttributes.DataRuns = getDataRuns(dataRunsBytes, bytesPerCluster)
 	if nonResidentDataAttributes.DataRuns == nil {
-		err = errors.Wrap(err, "failed to identify data runs")
+		err = fmt.Errorf("failed to identify data runs: %w", err)
 		return
 	}
 

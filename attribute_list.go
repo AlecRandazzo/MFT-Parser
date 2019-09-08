@@ -13,7 +13,6 @@ import (
 	"encoding/binary"
 	"encoding/hex"
 	"fmt"
-	"github.com/pkg/errors"
 )
 
 type AttributeInfo struct {
@@ -51,7 +50,7 @@ func (mftRecord *MasterFileTableRecord) GetAttributeList() (err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = errors.Errorf("panic %s, hex dump: %s", fmt.Sprint(r), hex.EncodeToString(mftRecord.MftRecordBytes))
+			err = fmt.Errorf("panic %s, hex dump: %s", fmt.Sprint(r), hex.EncodeToString(mftRecord.MftRecordBytes))
 		}
 	}()
 

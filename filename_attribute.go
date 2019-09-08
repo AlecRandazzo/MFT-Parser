@@ -12,7 +12,8 @@ package GoFor_MFT_Parser
 import (
 	"encoding/binary"
 	"encoding/hex"
-	"github.com/pkg/errors"
+	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -95,7 +96,7 @@ func (mftRecord *MasterFileTableRecord) GetFileNameAttributes() (err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = errors.Errorf("Failed to parse filename attribute")
+			err = errors.New("failed to parse filename attribute")
 		}
 	}()
 
@@ -113,7 +114,7 @@ func (mftRecord *MasterFileTableRecord) GetFileNameAttributes() (err error) {
 				fileNameAttributes.FlagResident = true
 			default:
 				fileNameAttributes.FlagResident = false
-				err = errors.Errorf("\nparseFileNameAttribute(): non-resident filename attribute encountered, hex dump: %s", hex.EncodeToString(attribute.AttributeBytes))
+				err = fmt.Errorf("parseFileNameAttribute(): non-resident filename attribute encountered, hex dump: %s", hex.EncodeToString(attribute.AttributeBytes))
 				return
 			}
 
@@ -130,7 +131,7 @@ func (mftRecord *MasterFileTableRecord) GetFileNameAttributes() (err error) {
 
 			fileNameAttributes.ParentDirRecordNumber = ConvertLittleEndianByteSliceToUInt64(attribute.AttributeBytes[offsetParentRecordNumber+nameLengthOffsetModifier : offsetParentRecordNumber+lengthParentRecordNumber+nameLengthOffsetModifier])
 			if fileNameAttributes.ParentDirRecordNumber == 0 {
-				err = errors.Wrap(err, "failed to convert filename attribute's parent dir record number")
+				err = fmt.Errorf("failed to convert filename attribute's parent dir record number: %w", err)
 				return
 			}
 
@@ -138,25 +139,25 @@ func (mftRecord *MasterFileTableRecord) GetFileNameAttributes() (err error) {
 
 			fileNameAttributes.FnCreated = ParseTimestamp(attribute.AttributeBytes[offsetFnCreated+nameLengthOffsetModifier : offsetFnCreated+lengthFnCreated+nameLengthOffsetModifier])
 			if fileNameAttributes.FnCreated == "" {
-				err = errors.Wrap(err, "could not parse fn created timestamp")
+				err = fmt.Errorf("could not parse fn created timestamp: %w", err)
 				return
 			}
 
 			fileNameAttributes.FnModified = ParseTimestamp(attribute.AttributeBytes[offsetFnModified+nameLengthOffsetModifier : offsetFnModified+lengthFnModified+nameLengthOffsetModifier])
 			if fileNameAttributes.FnModified == "" {
-				err = errors.Wrap(err, "could not parse fn modified timestamp")
+				err = fmt.Errorf("could not parse fn modified timestamp: %w", err)
 				return
 			}
 
 			fileNameAttributes.FnChanged = ParseTimestamp(attribute.AttributeBytes[offsetFnChanged+nameLengthOffsetModifier : offsetFnChanged+lengthFnChanged+nameLengthOffsetModifier])
 			if fileNameAttributes.FnChanged == "" {
-				err = errors.Wrap(err, "could not parse fn changed timestamp")
+				err = fmt.Errorf("could not parse fn changed timestamp: %w", err)
 				return
 			}
 
 			fileNameAttributes.FnAccessed = ParseTimestamp(attribute.AttributeBytes[offsetFnAccessed+nameLengthOffsetModifier : offsetFnAccessed+lengthFnAccessed+nameLengthOffsetModifier])
 			if fileNameAttributes.FnAccessed == "" {
-				err = errors.Wrap(err, "could not parse fn accessed timestamp")
+				err = fmt.Errorf("could not parse fn accessed timestamp %w", err)
 				return
 			}
 

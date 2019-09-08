@@ -11,7 +11,7 @@ package GoFor_MFT_Parser
 
 import (
 	"bytes"
-	"github.com/pkg/errors"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"os"
@@ -39,7 +39,7 @@ func ParseMFT(mftFilePath, outFileName string) (err error) {
 	file := MftFile{}
 	file.FileHandle, err = os.Open(mftFilePath)
 	if err != nil {
-		err = errors.Wrapf(err, "failed to open MFT file %s", mftFilePath)
+		err = fmt.Errorf("failed to open MFT file %s: %w", mftFilePath, err)
 		return
 	}
 	defer file.FileHandle.Close()
@@ -100,24 +100,24 @@ func (mftRecord *MasterFileTableRecord) ParseMFTRecord() (err error) {
 
 	err = mftRecord.GetAttributeList()
 	if err != nil {
-		err = errors.Wrap(err, "failed to get attribute list")
+		err = fmt.Errorf("failed to get attribute list: %w", err)
 		return
 	}
 
 	err = mftRecord.GetStandardInformationAttribute()
 	if err != nil {
-		err = errors.Wrap(err, "failed to get standard information attribute")
+		err = fmt.Errorf("failed to get standard information attribute: %w", err)
 		return
 	}
 
 	err = mftRecord.GetFileNameAttributes()
 	if err != nil {
-		err = errors.Wrap(err, "failed to get file name attributes")
+		err = fmt.Errorf("failed to get file name attributes: %w", err)
 		return
 	}
 	err = mftRecord.GetDataAttribute()
 	if err != nil {
-		err = errors.Wrap(err, "failed to get data attribute")
+		err = fmt.Errorf("failed to get data attributeL %w", err)
 		return
 	}
 	return
