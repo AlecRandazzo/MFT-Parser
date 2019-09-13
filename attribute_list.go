@@ -56,7 +56,43 @@ func (mftRecord *MasterFileTableRecord) GetAttributeList() (err error) {
 
 	// Init variable that tracks how far to the next attribute
 	var distanceToNext uint16 = 0
+	offset := mftRecord.RecordHeader.AttributesOffset
 
+	for {
+		// Calculate offset to next attribute
+		offset = offset + distanceToNext
+		lenBytesIn := len(mftRecord.MftRecordBytes)
+		if offset > uint16(lenBytesIn) || offset+0x04 > uint16(lenBytesIn) {
+			break
+		}
+
+		// Verify if the byte slice is actually an MFT attribute
+		shouldWeContinue := isThisAnAttribute(mftRecord.MftRecordBytes[offset])
+		if shouldWeContinue == false {
+			break
+		}
+
+		// Pull out information describing the attribute and the attribute bytes
+		attributeInfoSlice := AttributeInfo{}
+		attributeInfoSlice.AttributeType = mftRecord.MftRecordBytes[offset]
+		attributeSize := binary.LittleEndian.Uint16(mftRecord.MftRecordBytes[offset+offsetAttributeSize : offset+offsetAttributeSize+lengthAttributeSize])
+		end := offset + attributeSize
+		attributeInfoSlice.AttributeBytes = mftRecord.MftRecordBytes[offset:end]
+
+		// Append the attribute to the attribute struct
+		mftRecord.AttributeInfo = append(mftRecord.AttributeInfo, attributeInfoSlice)
+
+		// Track the distance to the next attribute based on the size of the current attribute
+		distanceToNext = attributeSize
+		if distanceToNext == 0 {
+			break
+		}
+	}
+	return
+}
+
+//TODO write a unit test for isThisAnAttribute()
+func isThisAnAttribute(attributeHeaderToCheck byte) (result bool) {
 	// Init a byte slice that tracks all possible valid MFT attribute types.
 	// We'll be used this to verify if what we are looking at is actually an MFT attribute.
 	const codeStandardInformation = 0x10
@@ -93,44 +129,15 @@ func (mftRecord *MasterFileTableRecord) GetAttributeList() (err error) {
 		codePropertySet,
 	}
 
-	for {
-		// Calculate offset to next attribute
-		mftRecord.RecordHeader.AttributesOffset = mftRecord.RecordHeader.AttributesOffset + distanceToNext
-		lenBytesIn := len(mftRecord.MftRecordBytes)
-		if mftRecord.RecordHeader.AttributesOffset > uint16(lenBytesIn) || mftRecord.RecordHeader.AttributesOffset+0x04 > uint16(lenBytesIn) {
+	// Verify if the byte slice is actually an MFT attribute
+	for _, validType := range validAttributeTypes {
+		if attributeHeaderToCheck == validType {
+			result = true
 			break
-		}
-
-		// Verify if the byte slice is actually an MFT attribute
-		var validAttribute bool
-		for _, validType := range validAttributeTypes {
-			if mftRecord.MftRecordBytes[mftRecord.RecordHeader.AttributesOffset] == validType {
-				validAttribute = true
-				break
-			} else {
-				validAttribute = false
-			}
-		}
-		if validAttribute == false {
-			break
-		}
-
-		// Pull out information describing the attribute and the attribute bytes
-		attributeInfoSlice := AttributeInfo{}
-		attributeInfoSlice.AttributeType = mftRecord.MftRecordBytes[mftRecord.RecordHeader.AttributesOffset]
-		attributeSize := binary.LittleEndian.Uint16(mftRecord.MftRecordBytes[mftRecord.RecordHeader.AttributesOffset+offsetAttributeSize : mftRecord.RecordHeader.AttributesOffset+offsetAttributeSize+lengthAttributeSize])
-		//AttributeSize := binary.LittleEndian.Uint16(MftRecordBytes[attributeOffset+4:attributeOffset+5])
-		end := mftRecord.RecordHeader.AttributesOffset + attributeSize
-		attributeInfoSlice.AttributeBytes = mftRecord.MftRecordBytes[mftRecord.RecordHeader.AttributesOffset:end]
-
-		// Append the attribute to the attribute struct
-		mftRecord.AttributeInfo = append(mftRecord.AttributeInfo, attributeInfoSlice)
-
-		// Track the distance to the next attribute based on the size of the current attribute
-		distanceToNext = attributeSize
-		if distanceToNext == 0 {
-			break
+		} else {
+			result = false
 		}
 	}
+
 	return
 }
