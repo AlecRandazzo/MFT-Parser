@@ -10,22 +10,26 @@
 package GoFor_MFT_Parser
 
 import (
+	bin "github.com/AlecRandazzo/BinaryTransforms"
 	"time"
 )
 
+type TimeStamp string
+
 // Parse a byte slice containing a unix timestamp and convert it to a timestamp string.
-func ParseTimestamp(timestampBytes []byte) (timestamp string) {
+func (timestamp *TimeStamp) Parse(timestampBytes []byte) {
 
 	var delta = time.Date(1970-369, 1, 1, 0, 0, 0, 0, time.UTC).UnixNano()
 
 	// Convert the byte slice to little endian int64 and then convert it to a string
-	timestampInt64 := ConvertLittleEndianByteSliceToInt64(timestampBytes)
+	timestampInt64 := bin.LittleEndianBinaryToInt64(timestampBytes)
 	if timestampInt64 == 0 {
-		timestamp = ""
+		*timestamp = ""
 		return
 	}
 
-	timestamp = time.Unix(0, int64(timestampInt64)*100+delta).UTC().Format("2006-01-02T15:04:05Z")
+	ts := time.Unix(0, int64(timestampInt64)*100+delta).UTC().Format("2006-01-02T15:04:05Z")
+	*timestamp = TimeStamp(ts)
 
 	return
 }

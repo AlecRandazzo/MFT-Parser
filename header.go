@@ -9,46 +9,56 @@
 
 package GoFor_MFT_Parser
 
-import "encoding/binary"
+import (
+	"errors"
+	bin "github.com/AlecRandazzo/BinaryTransforms"
+)
 
 type RecordHeader struct {
 	AttributesOffset uint16
 	RecordNumber     uint32
-	FlagDeleted      bool
-	FlagDirectory    bool
+	Flags            RecordHeaderFlags
 }
 
-func (mftRecord *MasterFileTableRecord) GetRecordHeader() {
-	const offsetAttributesOffset = 0x14
+type RecordHeaderFlags struct {
+	FlagDeleted   bool
+	FlagDirectory bool
+}
 
+func (recordHeader *RecordHeader) Parse(mftRecord []byte) (err error) {
+	const offsetRecordMagicNumber = 0x00
+	const lengthRecordMagicNumber = 0x05
+	magicNumber := string(mftRecord[offsetRecordMagicNumber : offsetRecordMagicNumber+lengthRecordMagicNumber])
+	if magicNumber != "FILE0" {
+		err = errors.New("mftrecord missing magic number FILE0")
+		return
+	}
+
+	const offsetAttributesOffset = 0x14
 	const offsetRecordNumber = 0x2c
 	const lengthRecordNumber = 0x04
+	const offsetRecordFlag = 0x16
 
-	mftRecord.RecordHeader.AttributesOffset = uint16(mftRecord.MftRecordBytes[offsetAttributesOffset])
-
-	mftRecord.getHeaderFlags()
-
-	valueRecordNumber := mftRecord.MftRecordBytes[offsetRecordNumber : offsetRecordNumber+lengthRecordNumber]
-	mftRecord.RecordHeader.RecordNumber = binary.LittleEndian.Uint32(valueRecordNumber)
+	recordHeader.AttributesOffset = uint16(mftRecord[offsetAttributesOffset])
+	recordHeader.Flags.Parse(mftRecord[offsetRecordFlag])
+	recordHeader.RecordNumber, _ = bin.LittleEndianBinaryToUInt32(mftRecord[offsetRecordNumber : offsetRecordNumber+lengthRecordNumber])
 	return
 }
 
-func (mftRecord *MasterFileTableRecord) getHeaderFlags() {
-	const offsetRecordFlag = 0x16
+func (recordHeaderFlags *RecordHeaderFlags) Parse(inByte byte) {
 	const codeDeletedFile = 0x00
 	//const codeActiveFile = 0x01
 	//const codeDeletedDirectory = 0x02
 	const codeDirectory = 0x03
-	recordFlag := mftRecord.MftRecordBytes[offsetRecordFlag]
-	if recordFlag == codeDeletedFile {
-		mftRecord.RecordHeader.FlagDeleted = true
-		mftRecord.RecordHeader.FlagDirectory = false
-	} else if recordFlag == codeDirectory {
-		mftRecord.RecordHeader.FlagDirectory = true
-		mftRecord.RecordHeader.FlagDeleted = false
+	if inByte == codeDeletedFile {
+		recordHeaderFlags.FlagDeleted = true
+		recordHeaderFlags.FlagDirectory = false
+	} else if inByte == codeDirectory {
+		recordHeaderFlags.FlagDirectory = true
+		recordHeaderFlags.FlagDeleted = false
 	} else {
-		mftRecord.RecordHeader.FlagDeleted = false
-		mftRecord.RecordHeader.FlagDirectory = false
+		recordHeaderFlags.FlagDeleted = false
+		recordHeaderFlags.FlagDirectory = false
 	}
 	return
 }

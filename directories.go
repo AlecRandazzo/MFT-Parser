@@ -25,57 +25,73 @@ type DirectoryList map[uint64]Directory
 type MappedDirectories map[uint64]string
 
 // Quickly checks the bytes of an MFT record to determine if it is a Directory or not.
-func (mftRecord *MasterFileTableRecord) QuickDirectoryCheck() {
+func (mftRecord *MasterFileTableRecord) isThisADirectory() {
 
 	const offsetRecordFlag = 0x16
 	const codeDirectory = 0x03
 	if len(mftRecord.MftRecordBytes) <= offsetRecordFlag {
-		mftRecord.RecordHeader.FlagDirectory = false
+		mftRecord.RecordHeader.Flags.FlagDirectory = false
 		return
 	}
 	recordFlag := mftRecord.MftRecordBytes[offsetRecordFlag]
 	if recordFlag == codeDirectory {
-		mftRecord.RecordHeader.FlagDirectory = true
+		mftRecord.RecordHeader.Flags.FlagDirectory = true
 	} else {
-		mftRecord.RecordHeader.FlagDirectory = false
+		mftRecord.RecordHeader.Flags.FlagDirectory = false
 	}
 	return
 }
 
 // Creates a list of directories from a channel of MFR record bytes.
-func CreateDirectoryList(inboundBuffer *chan []byte, directoryListChannel *chan map[uint64]Directory, waitGroup *sync.WaitGroup) {
+func (directoryList *DirectoryList) Create(inboundBuffer *chan []byte, directoryListChannel *chan map[uint64]Directory, waitGroup *sync.WaitGroup) {
 	defer waitGroup.Done()
 	var openChannel = true
-	var directoryList DirectoryList
 	var err error
-	directoryList = make(map[uint64]Directory)
+	*directoryList = make(map[uint64]Directory)
 	for openChannel == true {
 		var mftRecord MasterFileTableRecord
 		mftRecord.MftRecordBytes, openChannel = <-*inboundBuffer
-		mftRecord.QuickDirectoryCheck()
-		if mftRecord.RecordHeader.FlagDirectory == false {
+		mftRecord.isThisADirectory()
+		if mftRecord.RecordHeader.Flags.FlagDirectory == false {
 			continue
 		}
-		mftRecord.GetRecordHeader()
-
-		err = mftRecord.GetAttributeList()
+		err = mftRecord.RecordHeader.Parse(mftRecord.MftRecordBytes)
 		if err != nil {
 			continue
 		}
 
-		err = mftRecord.GetFileNameAttributes()
+		err = mftRecord.Attributes.Parse(mftRecord.MftRecordBytes, mftRecord.RecordHeader.AttributesOffset)
 		if err != nil {
 			continue
 		}
+
+		const codeFileName = 0x30
+		for _, attribute := range mftRecord.Attributes {
+			switch attribute.AttributeType {
+			case codeFileName:
+				fileNameAttribute := FileNameAttribute{}
+				err = fileNameAttribute.Parse(attribute)
+				if err != nil {
+					continue
+				}
+				mftRecord.FileNameAttributes = append(mftRecord.FileNameAttributes, fileNameAttribute)
+			default:
+				continue
+			}
+		}
+
 		for _, attribute := range mftRecord.FileNameAttributes {
 			if strings.Contains(attribute.FileNamespace, "WIN32") == true || strings.Contains(attribute.FileNamespace, "POSIX") {
 
-				directoryList[uint64(mftRecord.RecordHeader.RecordNumber)] = Directory{DirectoryName: attribute.FileName, ParentRecordNumber: attribute.ParentDirRecordNumber}
+				(*directoryList)[uint64(mftRecord.RecordHeader.RecordNumber)] = Directory{
+					DirectoryName:      attribute.FileName,
+					ParentRecordNumber: attribute.ParentDirRecordNumber,
+				}
 				break
 			}
 		}
 	}
-	*directoryListChannel <- directoryList
+	*directoryListChannel <- *directoryList
 	return
 }
 
@@ -128,12 +144,13 @@ func (file *MftFile) CombineDirectoryInformation(directoryListChannel *chan map[
 // Builds a list of directories for the purpose of of mapping MFT records to their parent directories.
 func (file *MftFile) BuildDirectoryTree() (err error) {
 	var waitGroup sync.WaitGroup
-	bufferChannel := make(chan []byte, 100)
 	numberOfWorkers := 4
+	bufferChannel := make(chan []byte, 100)
 	directoryListChannel := make(chan map[uint64]Directory, numberOfWorkers)
 	for i := 0; i <= numberOfWorkers; i++ {
 		waitGroup.Add(1)
-		go CreateDirectoryList(&bufferChannel, &directoryListChannel, &waitGroup)
+		directoryList := DirectoryList{}
+		go directoryList.Create(&bufferChannel, &directoryListChannel, &waitGroup)
 	}
 
 	var waitForDirectoryCombination sync.WaitGroup

@@ -16,16 +16,14 @@ import (
 )
 
 type StandardInformationAttributes struct {
-	SiCreated    string
-	SiModified   string
-	SiAccessed   string
-	SiChanged    string
-	FlagResident bool
+	SiCreated    TimeStamp
+	SiModified   TimeStamp
+	SiAccessed   TimeStamp
+	SiChanged    TimeStamp
+	FlagResident FlagResidency
 }
 
-func (mftRecord *MasterFileTableRecord) GetStandardInformationAttribute() (err error) {
-	const codeStandardInformation = 0x10
-
+func (standardInfo *StandardInformationAttributes) Parse(attribute attribute) (err error) {
 	const offsetResidentFlag = 0x08
 
 	const offsetSiCreated = 0x18
@@ -46,49 +44,22 @@ func (mftRecord *MasterFileTableRecord) GetStandardInformationAttribute() (err e
 		}
 	}()
 
-	for _, attribute := range mftRecord.AttributeInfo {
-		if attribute.AttributeType == codeStandardInformation {
-			// The standard information attribute has a minimum length of 0x30
-			if len(attribute.AttributeBytes) < 0x30 {
-				return
-			}
-
-			// Check to see if the standard information attribute is resident to the MFT or not
-			if attribute.AttributeBytes[offsetResidentFlag] == 0x00 {
-				mftRecord.StandardInformationAttributes.FlagResident = true
-			} else {
-				mftRecord.StandardInformationAttributes.FlagResident = false
-				err = fmt.Errorf("non resident standard information flag found, hex dump: %s", hex.EncodeToString(attribute.AttributeBytes))
-				return
-			}
-
-			// Convert timestamps from bytes to time.Time
-
-			mftRecord.StandardInformationAttributes.SiCreated = ParseTimestamp(attribute.AttributeBytes[offsetSiCreated : offsetSiCreated+lengthSiCreated])
-			if mftRecord.StandardInformationAttributes.SiCreated == "" {
-				err = fmt.Errorf("could not parse si created timestamp: %w", err)
-				return
-			}
-
-			mftRecord.StandardInformationAttributes.SiModified = ParseTimestamp(attribute.AttributeBytes[offsetSiModified : offsetSiModified+lengthSiModified])
-			if mftRecord.StandardInformationAttributes.SiModified == "" {
-				err = fmt.Errorf("could not parse si modified timestamp: %w", err)
-				return
-			}
-
-			mftRecord.StandardInformationAttributes.SiChanged = ParseTimestamp(attribute.AttributeBytes[offsetSiChanged : offsetSiChanged+lengthSiChanged])
-			if mftRecord.StandardInformationAttributes.SiChanged == "" {
-				err = fmt.Errorf("could not parse si changed timestamp: %w", err)
-				return
-			}
-
-			mftRecord.StandardInformationAttributes.SiAccessed = ParseTimestamp(attribute.AttributeBytes[offsetSiAccessed : offsetSiAccessed+lengthSiAccessed])
-			if mftRecord.StandardInformationAttributes.SiAccessed == "" {
-				err = fmt.Errorf("could not parse si accessed timestamp: %w", err)
-				return
-			}
-			return
-		}
+	// The standard information attribute has a minimum length of 0x30
+	if len(attribute.AttributeBytes) < 0x30 {
+		return
 	}
+
+	// Check to see if the standard information attribute is resident to the MFT or not
+	standardInfo.FlagResident.Parse(attribute.AttributeBytes[offsetResidentFlag])
+	if standardInfo.FlagResident == false {
+		err = fmt.Errorf("non resident standard information flag found, hex dump: %s", hex.EncodeToString(attribute.AttributeBytes))
+		return
+	}
+
+	// Parse timestamps
+	standardInfo.SiCreated.Parse(attribute.AttributeBytes[offsetSiCreated : offsetSiCreated+lengthSiCreated])
+	standardInfo.SiModified.Parse(attribute.AttributeBytes[offsetSiModified : offsetSiModified+lengthSiModified])
+	standardInfo.SiChanged.Parse(attribute.AttributeBytes[offsetSiChanged : offsetSiChanged+lengthSiChanged])
+	standardInfo.SiAccessed.Parse(attribute.AttributeBytes[offsetSiAccessed : offsetSiAccessed+lengthSiAccessed])
 	return
 }

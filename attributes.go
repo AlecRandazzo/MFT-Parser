@@ -15,13 +15,16 @@ import (
 	"fmt"
 )
 
-type AttributeInfo struct {
+type Attributes []attribute
+
+type attribute struct {
 	AttributeType  byte
 	AttributeBytes []byte
+	AttributeSize  uint16
 }
 
-// Get MFT record attributes list.
-func (mftRecord *MasterFileTableRecord) GetAttributeList() (err error) {
+// Parse MFT record attributes list.
+func (attributes *Attributes) Parse(mftRecord []byte, attributesOffset uint16) (err error) {
 	const offsetAttributeSize = 0x04
 	const lengthAttributeSize = 0x04
 
@@ -50,44 +53,54 @@ func (mftRecord *MasterFileTableRecord) GetAttributeList() (err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic %s, hex dump: %s", fmt.Sprint(r), hex.EncodeToString(mftRecord.MftRecordBytes))
+			err = fmt.Errorf("panic %s, hex dump: %s", fmt.Sprint(r), hex.EncodeToString(mftRecord))
 		}
 	}()
 
 	// Init variable that tracks how far to the next attribute
-	var distanceToNext uint16 = 0
-	offset := mftRecord.RecordHeader.AttributesOffset
+	var distanceToNextAttribute uint16 = 0
 
 	for {
 		// Calculate offset to next attribute
-		offset = offset + distanceToNext
-		lenBytesIn := len(mftRecord.MftRecordBytes)
-		if offset > uint16(lenBytesIn) || offset+0x04 > uint16(lenBytesIn) {
+		attributesOffset = attributesOffset + distanceToNextAttribute
+
+		// Break if the offset is beyond the byte slice
+		lenBytesIn := len(mftRecord)
+		if attributesOffset > uint16(lenBytesIn) || attributesOffset+0x04 > uint16(lenBytesIn) {
 			break
 		}
 
 		// Verify if the byte slice is actually an MFT attribute
-		shouldWeContinue := isThisAnAttribute(mftRecord.MftRecordBytes[offset])
+		shouldWeContinue := isThisAnAttribute(mftRecord[attributesOffset])
 		if shouldWeContinue == false {
 			break
 		}
 
 		// Pull out information describing the attribute and the attribute bytes
-		attributeInfoSlice := AttributeInfo{}
-		attributeInfoSlice.AttributeType = mftRecord.MftRecordBytes[offset]
-		attributeSize := binary.LittleEndian.Uint16(mftRecord.MftRecordBytes[offset+offsetAttributeSize : offset+offsetAttributeSize+lengthAttributeSize])
-		end := offset + attributeSize
-		attributeInfoSlice.AttributeBytes = mftRecord.MftRecordBytes[offset:end]
+		attribute := attribute{}
+		attribute.Parse(mftRecord, attributesOffset)
 
 		// Append the attribute to the attribute struct
-		mftRecord.AttributeInfo = append(mftRecord.AttributeInfo, attributeInfoSlice)
+		*attributes = append(*attributes, attribute)
 
 		// Track the distance to the next attribute based on the size of the current attribute
-		distanceToNext = attributeSize
-		if distanceToNext == 0 {
+		distanceToNextAttribute = attribute.AttributeSize
+		if distanceToNextAttribute == 0 {
 			break
 		}
 	}
+	return
+}
+
+func (attribute *attribute) Parse(mftRecord []byte, attributeOffset uint16) {
+	const offsetAttributeSize = 0x04
+	const lengthAttributeSize = 0x04
+
+	attribute.AttributeType = mftRecord[attributeOffset]
+	attribute.AttributeSize = binary.LittleEndian.Uint16(mftRecord[attributeOffset+offsetAttributeSize : attributeOffset+offsetAttributeSize+lengthAttributeSize])
+	end := attributeOffset + attribute.AttributeSize
+	copy(attribute.AttributeBytes, mftRecord[attributeOffset:end])
+
 	return
 }
 

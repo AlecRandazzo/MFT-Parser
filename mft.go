@@ -22,10 +22,10 @@ type MasterFileTableRecord struct {
 	BytesPerCluster               int64
 	RecordHeader                  RecordHeader
 	StandardInformationAttributes StandardInformationAttributes
-	FileNameAttributes            []FileNameAttributes
-	DataAttributes                DataAttributes
+	FileNameAttributes            []FileNameAttribute
+	DataAttributes                DataAttribute
 	MftRecordBytes                []byte
-	AttributeInfo                 []AttributeInfo
+	Attributes                    Attributes
 }
 
 type MftFile struct {
@@ -64,11 +64,11 @@ func ParseMFT(mftFilePath, outFileName string) (err error) {
 		}
 		mftRecord := MasterFileTableRecord{}
 		mftRecord.MftRecordBytes = buffer
-		err = mftRecord.ParseMFTRecord()
+		err = mftRecord.Parse()
 		if err != nil {
 			log.WithFields(log.Fields{
 				"mft_offset":   offset,
-				"deleted_flag": mftRecord.RecordHeader.FlagDeleted,
+				"deleted_flag": mftRecord.RecordHeader.Flags.FlagDeleted,
 			}).Debug(err)
 			offset += 1024
 			continue
@@ -86,45 +86,50 @@ func ParseMFT(mftFilePath, outFileName string) (err error) {
 }
 
 // Parse the bytes of an MFT record
-func (mftRecord *MasterFileTableRecord) ParseMFTRecord() (err error) {
-
-	recordHeaderPresent := mftRecord.CheckForRecordHeader()
-	if recordHeaderPresent == false {
-		return
+func (mftRecord *MasterFileTableRecord) Parse() (err error) {
+	err = mftRecord.RecordHeader.Parse(mftRecord.MftRecordBytes)
+	if err != nil {
+		err = fmt.Errorf("%w", err)
 	}
-
-	mftRecord.TrimMFTRecordSlackSpace()
-
-	// Get attributes from the MFT record
-	mftRecord.GetRecordHeader()
-
-	err = mftRecord.GetAttributeList()
+	mftRecord.TrimSlackSpace()
+	err = mftRecord.Attributes.Parse(mftRecord.MftRecordBytes, mftRecord.RecordHeader.AttributesOffset)
 	if err != nil {
 		err = fmt.Errorf("failed to get attribute list: %w", err)
 		return
 	}
 
-	err = mftRecord.GetStandardInformationAttribute()
-	if err != nil {
-		err = fmt.Errorf("failed to get standard information attribute: %w", err)
-		return
-	}
+	const codeFileName = 0x30
+	const codeStandardInformation = 0x10
+	const codeData = 0x80
 
-	err = mftRecord.GetFileNameAttributes()
-	if err != nil {
-		err = fmt.Errorf("failed to get file name attributes: %w", err)
-		return
-	}
-	err = mftRecord.GetDataAttribute()
-	if err != nil {
-		err = fmt.Errorf("failed to get data attributeL %w", err)
-		return
+	for _, attribute := range mftRecord.Attributes {
+		switch attribute.AttributeType {
+		case codeFileName:
+			fileNameAttribute := FileNameAttribute{}
+			err = fileNameAttribute.Parse(attribute)
+			if err != nil {
+				continue
+			}
+			mftRecord.FileNameAttributes = append(mftRecord.FileNameAttributes, fileNameAttribute)
+		case codeStandardInformation:
+			err = mftRecord.StandardInformationAttributes.Parse(attribute)
+			if err != nil {
+				err = fmt.Errorf("failed to get standard info attribute %w", err)
+				return
+			}
+		case codeData:
+			err = mftRecord.DataAttributes.Parse(attribute, mftRecord.BytesPerCluster)
+			if err != nil {
+				err = fmt.Errorf("failed to get data attribute %w", err)
+				return
+			}
+		}
 	}
 	return
 }
 
 // Trims off slack space after end sequence 0xffffffff
-func (mftRecord *MasterFileTableRecord) TrimMFTRecordSlackSpace() {
+func (mftRecord *MasterFileTableRecord) TrimSlackSpace() {
 	lenMftRecordBytes := len(mftRecord.MftRecordBytes)
 	mftRecordEndByteSequence := []byte{0xff, 0xff, 0xff, 0xff}
 	for i := 0; i < (lenMftRecordBytes - 4); i++ {
@@ -133,17 +138,4 @@ func (mftRecord *MasterFileTableRecord) TrimMFTRecordSlackSpace() {
 			break
 		}
 	}
-}
-
-// Verifies that the bytes receives is actually an MFT record. All MFT records start with "FILE0".
-func (mftRecord *MasterFileTableRecord) CheckForRecordHeader() (recordHeaderPresent bool) {
-	const offsetRecordMagicNumber = 0x00
-	const lengthRecordMagicNumber = 0x05
-	valueRecordHeader := string(mftRecord.MftRecordBytes[offsetRecordMagicNumber : offsetRecordMagicNumber+lengthRecordMagicNumber])
-	if valueRecordHeader == "FILE0" {
-		recordHeaderPresent = true
-	} else {
-		recordHeaderPresent = false
-	}
-	return
 }

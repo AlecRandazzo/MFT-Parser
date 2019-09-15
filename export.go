@@ -68,22 +68,22 @@ func (file MftFile) MftToCSV(outFileName string, waitgroup *sync.WaitGroup) (err
 				physicalFileSize := strconv.FormatUint(record.PhysicalFileSize, 10)
 				csvRow = []string{
 					recordNumber, //Record Number
-					strconv.FormatBool(mftRecord.RecordHeader.FlagDirectory), //Directory Flag
-					strconv.FormatBool(record.FileNameFlags.System),          //System file flag
-					strconv.FormatBool(record.FileNameFlags.Hidden),          //Hidden flag
-					strconv.FormatBool(record.FileNameFlags.ReadOnly),        //Read only flag
-					strconv.FormatBool(mftRecord.RecordHeader.FlagDeleted),   //Deleted Flag
+					strconv.FormatBool(mftRecord.RecordHeader.Flags.FlagDirectory), //Directory Flag
+					strconv.FormatBool(record.FileNameFlags.System),                //System file flag
+					strconv.FormatBool(record.FileNameFlags.Hidden),                //Hidden flag
+					strconv.FormatBool(record.FileNameFlags.ReadOnly),              //Read only flag
+					strconv.FormatBool(mftRecord.RecordHeader.Flags.FlagDeleted),   //Deleted Flag
 					fileDirectory,    //File Directory
 					record.FileName,  //File Name
 					physicalFileSize, // File Size
-					mftRecord.StandardInformationAttributes.SiCreated,  //File Created
-					mftRecord.StandardInformationAttributes.SiModified, //File Modified
-					mftRecord.StandardInformationAttributes.SiAccessed, //File Accessed
-					mftRecord.StandardInformationAttributes.SiChanged,  //File entry Modified
-					record.FnCreated,  //FileName Created
-					record.FnModified, //FileName Modified
-					record.FnAccessed, //FileName Accessed
-					record.FnChanged,  //FileName Entry Modified
+					string(mftRecord.StandardInformationAttributes.SiCreated),  //File Created
+					string(mftRecord.StandardInformationAttributes.SiModified), //File Modified
+					string(mftRecord.StandardInformationAttributes.SiAccessed), //File Accessed
+					string(mftRecord.StandardInformationAttributes.SiChanged),  //File entry Modified
+					string(record.FnCreated),                                   //FileName Created
+					string(record.FnModified),                                  //FileName Modified
+					string(record.FnAccessed),                                  //FileName Accessed
+					string(record.FnChanged),                                   //FileName Entry Modified
 				}
 				err = csvWriter.Write(csvRow)
 				if err != nil {
