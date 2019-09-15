@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	bin "github.com/AlecRandazzo/BinaryTransforms"
+	ts "github.com/AlecRandazzo/Timestamp-Parser"
 )
 
 type FileNameAttributes []FileNameAttribute
@@ -22,10 +23,10 @@ type FileNameAttributes []FileNameAttribute
 type FlagResidency bool
 
 type FileNameAttribute struct {
-	FnCreated               TimeStamp
-	FnModified              TimeStamp
-	FnAccessed              TimeStamp
-	FnChanged               TimeStamp
+	FnCreated               ts.TimeStamp
+	FnModified              ts.TimeStamp
+	FnAccessed              ts.TimeStamp
+	FnChanged               ts.TimeStamp
 	FlagResident            FlagResidency
 	NameLength              NameLength
 	AttributeSize           uint32

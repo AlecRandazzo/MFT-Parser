@@ -13,13 +13,14 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	ts "github.com/AlecRandazzo/Timestamp-Parser"
 )
 
 type StandardInformationAttributes struct {
-	SiCreated    TimeStamp
-	SiModified   TimeStamp
-	SiAccessed   TimeStamp
-	SiChanged    TimeStamp
+	SiCreated    ts.TimeStamp
+	SiModified   ts.TimeStamp
+	SiAccessed   ts.TimeStamp
+	SiChanged    ts.TimeStamp
 	FlagResident FlagResidency
 }
 
