@@ -10,7 +10,7 @@
 package main
 
 import (
-	mft "github.com/AlecRandazzo/Gofor-MFT-Parser"
+	mft "github.com/AlecRandazzo/GoFor-MFT-Parser"
 	log "github.com/sirupsen/logrus"
 	"os"
 )

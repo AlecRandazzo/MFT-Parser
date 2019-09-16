@@ -99,6 +99,8 @@ func (attribute *attribute) Parse(mftRecord []byte, attributeOffset uint16) {
 	attribute.AttributeType = mftRecord[attributeOffset]
 	attribute.AttributeSize = binary.LittleEndian.Uint16(mftRecord[attributeOffset+offsetAttributeSize : attributeOffset+offsetAttributeSize+lengthAttributeSize])
 	end := attributeOffset + attribute.AttributeSize
+	attributeLength := len(mftRecord[attributeOffset:end])
+	attribute.AttributeBytes = make([]byte, attributeLength)
 	copy(attribute.AttributeBytes, mftRecord[attributeOffset:end])
 
 	return
