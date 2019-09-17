@@ -24,7 +24,7 @@ type StandardInformationAttributes struct {
 	FlagResident FlagResidency
 }
 
-func (standardInfo *StandardInformationAttributes) Parse(attribute attribute) (err error) {
+func (standardInfo *StandardInformationAttributes) Parse(attribute Attribute) (err error) {
 	const offsetResidentFlag = 0x08
 
 	const offsetSiCreated = 0x18
@@ -41,16 +41,16 @@ func (standardInfo *StandardInformationAttributes) Parse(attribute attribute) (e
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = errors.New("failed to parse standard info attribute")
+			err = errors.New("failed to parse standard info Attribute")
 		}
 	}()
 
-	// The standard information attribute has a minimum length of 0x30
+	// The standard information Attribute has a minimum length of 0x30
 	if len(attribute.AttributeBytes) < 0x30 {
 		return
 	}
 
-	// Check to see if the standard information attribute is resident to the MFT or not
+	// Check to see if the standard information Attribute is resident to the MFT or not
 	standardInfo.FlagResident.Parse(attribute.AttributeBytes[offsetResidentFlag])
 	if standardInfo.FlagResident == false {
 		err = fmt.Errorf("non resident standard information flag found, hex dump: %s", hex.EncodeToString(attribute.AttributeBytes))

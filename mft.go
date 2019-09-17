@@ -94,7 +94,7 @@ func (mftRecord *MasterFileTableRecord) Parse() (err error) {
 	mftRecord.TrimSlackSpace()
 	err = mftRecord.Attributes.Parse(mftRecord.MftRecordBytes, mftRecord.RecordHeader.AttributesOffset)
 	if err != nil {
-		err = fmt.Errorf("failed to get attribute list: %w", err)
+		err = fmt.Errorf("failed to get Attribute list: %w", err)
 		return
 	}
 
@@ -114,13 +114,13 @@ func (mftRecord *MasterFileTableRecord) Parse() (err error) {
 		case codeStandardInformation:
 			err = mftRecord.StandardInformationAttributes.Parse(attribute)
 			if err != nil {
-				err = fmt.Errorf("failed to get standard info attribute %w", err)
+				err = fmt.Errorf("failed to get standard info Attribute %w", err)
 				return
 			}
 		case codeData:
 			err = mftRecord.DataAttributes.Parse(attribute, mftRecord.BytesPerCluster)
 			if err != nil {
-				err = fmt.Errorf("failed to get data attribute %w", err)
+				err = fmt.Errorf("failed to get data Attribute %w", err)
 				return
 			}
 		}

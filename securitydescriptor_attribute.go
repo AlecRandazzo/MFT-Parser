@@ -19,8 +19,8 @@ package GoFor_MFT_Parser
 //	//var userSidBytes []byte
 //	//var groupSidBytes []byte
 //	//
-//	//for _, attribute := range mftRecord.MftRecordBytes {
-//	//	if attribute == codeSecurityDescriptor {
+//	//for _, Attribute := range mftRecord.MftRecordBytes {
+//	//	if Attribute == codeSecurityDescriptor {
 //	//		userSidBytes = attributeBytes[offsetUserSIDOffset : offsetUserSIDOffset + lengthUserSIDOffset]
 //	//		groupSidBytes = attributeBytes[offsetGroupSIDOffset : offsetGroupSIDOffset + lengthGroupSIDOffset]
 //	//	}

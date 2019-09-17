@@ -57,13 +57,13 @@ type DataAttribute struct {
 	NonResidentDataAttributes NonResidentDataAttribute
 }
 
-func (dataAttribute *DataAttribute) Parse(attribute attribute, bytesPerCluster int64) (err error) {
+func (dataAttribute *DataAttribute) Parse(attribute Attribute, bytesPerCluster int64) (err error) {
 	const codeData = 0x80
 	const offsetResidentFlag = 0x08
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = errors.New("failed to parse data attribute")
+			err = errors.New("failed to parse data Attribute")
 		}
 	}()
 
@@ -76,7 +76,7 @@ func (dataAttribute *DataAttribute) Parse(attribute attribute, bytesPerCluster i
 		dataAttribute.FlagResident = true
 		err = dataAttribute.ResidentDataAttributes.Parse(attribute.AttributeBytes)
 		if err != nil {
-			err = fmt.Errorf("failed to parse resident data attribute: %w", err)
+			err = fmt.Errorf("failed to parse resident data Attribute: %w", err)
 			return
 		}
 		return
@@ -84,7 +84,7 @@ func (dataAttribute *DataAttribute) Parse(attribute attribute, bytesPerCluster i
 		dataAttribute.FlagResident = false
 		err = dataAttribute.NonResidentDataAttributes.Parse(attribute.AttributeBytes, bytesPerCluster)
 		if err != nil {
-			err = fmt.Errorf("failed to parse non resident data attribute: %w", err)
+			err = fmt.Errorf("failed to parse non resident data Attribute: %w", err)
 			return
 		}
 	}
@@ -121,7 +121,7 @@ func (nonResidentDataAttributes *NonResidentDataAttribute) Parse(attribute []byt
 		return
 	}
 
-	// Identify offset of the data runs in the data attribute
+	// Identify offset of the data runs in the data Attribute
 	const offsetDataRunOffset = 0x20
 	dataRunOffset := attribute[offsetDataRunOffset]
 

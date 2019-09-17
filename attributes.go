@@ -15,9 +15,9 @@ import (
 	"fmt"
 )
 
-type Attributes []attribute
+type Attributes []Attribute
 
-type attribute struct {
+type Attribute struct {
 	AttributeType  byte
 	AttributeBytes []byte
 	AttributeSize  uint16
@@ -57,11 +57,11 @@ func (attributes *Attributes) Parse(mftRecord []byte, attributesOffset uint16) (
 		}
 	}()
 
-	// Init variable that tracks how far to the next attribute
+	// Init variable that tracks how far to the next Attribute
 	var distanceToNextAttribute uint16 = 0
 
 	for {
-		// Calculate offset to next attribute
+		// Calculate offset to next Attribute
 		attributesOffset = attributesOffset + distanceToNextAttribute
 
 		// Break if the offset is beyond the byte slice
@@ -70,20 +70,20 @@ func (attributes *Attributes) Parse(mftRecord []byte, attributesOffset uint16) (
 			break
 		}
 
-		// Verify if the byte slice is actually an MFT attribute
+		// Verify if the byte slice is actually an MFT Attribute
 		shouldWeContinue := isThisAnAttribute(mftRecord[attributesOffset])
 		if shouldWeContinue == false {
 			break
 		}
 
-		// Pull out information describing the attribute and the attribute bytes
-		attribute := attribute{}
+		// Pull out information describing the Attribute and the Attribute bytes
+		attribute := Attribute{}
 		attribute.Parse(mftRecord, attributesOffset)
 
-		// Append the attribute to the attribute struct
+		// Append the Attribute to the Attribute struct
 		*attributes = append(*attributes, attribute)
 
-		// Track the distance to the next attribute based on the size of the current attribute
+		// Track the distance to the next Attribute based on the size of the current Attribute
 		distanceToNextAttribute = attribute.AttributeSize
 		if distanceToNextAttribute == 0 {
 			break
@@ -92,7 +92,7 @@ func (attributes *Attributes) Parse(mftRecord []byte, attributesOffset uint16) (
 	return
 }
 
-func (attribute *attribute) Parse(mftRecord []byte, attributeOffset uint16) {
+func (attribute *Attribute) Parse(mftRecord []byte, attributeOffset uint16) {
 	const offsetAttributeSize = 0x04
 	const lengthAttributeSize = 0x04
 
@@ -108,8 +108,8 @@ func (attribute *attribute) Parse(mftRecord []byte, attributeOffset uint16) {
 
 //TODO write a unit test for isThisAnAttribute()
 func isThisAnAttribute(attributeHeaderToCheck byte) (result bool) {
-	// Init a byte slice that tracks all possible valid MFT attribute types.
-	// We'll be used this to verify if what we are looking at is actually an MFT attribute.
+	// Init a byte slice that tracks all possible valid MFT Attribute types.
+	// We'll be used this to verify if what we are looking at is actually an MFT Attribute.
 	const codeStandardInformation = 0x10
 	const codeAttributeList = 0x20
 	const codeFileName = 0x30
@@ -144,7 +144,7 @@ func isThisAnAttribute(attributeHeaderToCheck byte) (result bool) {
 		codePropertySet,
 	}
 
-	// Verify if the byte slice is actually an MFT attribute
+	// Verify if the byte slice is actually an MFT Attribute
 	for _, validType := range validAttributeTypes {
 		if attributeHeaderToCheck == validType {
 			result = true

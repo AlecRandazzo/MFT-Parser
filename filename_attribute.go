@@ -63,7 +63,7 @@ type FileNameFlags struct {
 	IndexView         bool
 }
 
-func (filenameAttribute *FileNameAttribute) Parse(attribute attribute) (err error) {
+func (filenameAttribute *FileNameAttribute) Parse(attribute Attribute) (err error) {
 	const offsetAttributeSize = 0x04
 	const lengthAttributeSize = 0x04
 
@@ -102,18 +102,18 @@ func (filenameAttribute *FileNameAttribute) Parse(attribute attribute) (err erro
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = errors.New("failed to parse filename attribute")
+			err = errors.New("failed to parse filename Attribute")
 		}
 	}()
 
-	// The filename attribute has a minimum length of 0x44
+	// The filename Attribute has a minimum length of 0x44
 	if len(attribute.AttributeBytes) < 0x44 {
 		return
 	}
 	filenameAttribute.AttributeSize, _ = bin.LittleEndianBinaryToUInt32(attribute.AttributeBytes[offsetAttributeSize : offsetAttributeSize+lengthAttributeSize])
 	filenameAttribute.FlagResident.Parse(attribute.AttributeBytes[offsetResidentFlag])
 	if filenameAttribute.FlagResident == false {
-		err = fmt.Errorf("parseFileNameAttribute(): non-resident filename attribute encountered, hex dump: %s", hex.EncodeToString(attribute.AttributeBytes))
+		err = fmt.Errorf("parseFileNameAttribute(): non-resident filename Attribute encountered, hex dump: %s", hex.EncodeToString(attribute.AttributeBytes))
 		return
 	}
 
