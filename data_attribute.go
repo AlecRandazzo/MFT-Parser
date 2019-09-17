@@ -45,7 +45,7 @@ type DataRun struct {
 	Length         int64
 }
 
-type dataRunSplit struct {
+type DataRunSplit struct {
 	offsetByteCount int
 	lengthByteCount int
 }
@@ -169,7 +169,7 @@ func (dataRuns *DataRuns) Parse(dataRunBytes []byte, bytesPerCluster int64) {
 			// Take the first byte of a data run and send it to get split so we know how many bytes account for the
 			// data run's offset and how many account for the data run's length.
 			byteToBeSplit := dataRunBytes[offset]
-			dataRunSplit := dataRunSplit{}
+			dataRunSplit := DataRunSplit{}
 			dataRunSplit.Parse(byteToBeSplit)
 			if dataRunSplit.offsetByteCount == 0 && dataRunSplit.lengthByteCount == 0 {
 				*dataRuns = nil
@@ -223,7 +223,7 @@ func (dataRuns *DataRuns) Parse(dataRunBytes []byte, bytesPerCluster int64) {
 	return
 }
 
-func (dataRunSplit *dataRunSplit) Parse(dataRun byte) {
+func (dataRunSplit *DataRunSplit) Parse(dataRun byte) {
 	/*
 		This function will split the first byte of a data run.
 		See the following for a good write up on data runs: https://homepage.cs.uri.edu/~thenry/csc487/video/66_NTFS_Data_Runs.pdf
