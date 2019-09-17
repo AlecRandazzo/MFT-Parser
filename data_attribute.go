@@ -74,7 +74,7 @@ func (dataAttribute *DataAttribute) Parse(attribute Attribute, bytesPerCluster i
 	//TODO: handle resident data
 	if attribute.AttributeBytes[offsetResidentFlag] == 0x00 {
 		dataAttribute.FlagResident = true
-		err = dataAttribute.ResidentDataAttributes.Parse(attribute.AttributeBytes)
+		err = dataAttribute.ResidentDataAttributes.Parse(attribute)
 		if err != nil {
 			err = fmt.Errorf("failed to parse resident data Attribute: %w", err)
 			return
@@ -82,7 +82,7 @@ func (dataAttribute *DataAttribute) Parse(attribute Attribute, bytesPerCluster i
 		return
 	} else {
 		dataAttribute.FlagResident = false
-		err = dataAttribute.NonResidentDataAttributes.Parse(attribute.AttributeBytes, bytesPerCluster)
+		err = dataAttribute.NonResidentDataAttributes.Parse(attribute, bytesPerCluster)
 		if err != nil {
 			err = fmt.Errorf("failed to parse non resident data Attribute: %w", err)
 			return
@@ -92,46 +92,46 @@ func (dataAttribute *DataAttribute) Parse(attribute Attribute, bytesPerCluster i
 	return
 }
 
-func (residentDataAttribute *ResidentDataAttribute) Parse(attribute []byte) (err error) {
+func (residentDataAttribute *ResidentDataAttribute) Parse(attribute Attribute) (err error) {
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic recovery %s, hex dump: %s", fmt.Sprint(r), hex.EncodeToString(attribute))
+			err = fmt.Errorf("panic recovery %s, hex dump: %s", fmt.Sprint(r), hex.EncodeToString(attribute.AttributeBytes))
 		}
 	}()
 
-	if len(attribute) < 0x18 {
+	if len(attribute.AttributeBytes) < 0x18 {
 		return
 	}
 
 	const offsetResidentData = 0x18
-	residentDataAttribute.ResidentData = attribute[offsetResidentData:]
+	residentDataAttribute.ResidentData = attribute.AttributeBytes[offsetResidentData:]
 
 	return
 }
 
-func (nonResidentDataAttributes *NonResidentDataAttribute) Parse(attribute []byte, bytesPerCluster int64) (err error) {
+func (nonResidentDataAttributes *NonResidentDataAttribute) Parse(attribute Attribute, bytesPerCluster int64) (err error) {
 
 	defer func() {
 		if r := recover(); r != nil {
-			err = fmt.Errorf("panic recovery %s, hex dump: %s", fmt.Sprint(r), hex.EncodeToString(attribute))
+			err = fmt.Errorf("panic recovery %s, hex dump: %s", fmt.Sprint(r), hex.EncodeToString(attribute.AttributeBytes))
 		}
 	}()
 
-	if len(attribute) <= 0x20 {
+	if len(attribute.AttributeBytes) <= 0x20 {
 		return
 	}
 
 	// Identify offset of the data runs in the data Attribute
 	const offsetDataRunOffset = 0x20
-	dataRunOffset := attribute[offsetDataRunOffset]
+	dataRunOffset := attribute.AttributeBytes[offsetDataRunOffset]
 
-	if len(attribute) < int(dataRunOffset) {
+	if len(attribute.AttributeBytes) < int(dataRunOffset) {
 		return
 	}
 
 	// Pull out the data run bytes
 	var dataRunsBytes []byte
-	copy(dataRunsBytes, attribute[dataRunOffset:])
+	copy(dataRunsBytes, attribute.AttributeBytes[dataRunOffset:])
 
 	// Send the bytes to be parsed
 	nonResidentDataAttributes.DataRuns.Parse(dataRunsBytes, bytesPerCluster)
