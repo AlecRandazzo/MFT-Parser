@@ -117,7 +117,8 @@ func (nonResidentDataAttributes *NonResidentDataAttribute) Parse(attribute Attri
 		}
 	}()
 
-	if len(attribute.AttributeBytes) <= 0x20 {
+	attributeLength := len(attribute.AttributeBytes)
+	if attributeLength <= 0x20 {
 		return
 	}
 
@@ -125,12 +126,12 @@ func (nonResidentDataAttributes *NonResidentDataAttribute) Parse(attribute Attri
 	const offsetDataRunOffset = 0x20
 	dataRunOffset := attribute.AttributeBytes[offsetDataRunOffset]
 
-	if len(attribute.AttributeBytes) < int(dataRunOffset) {
+	if attributeLength < int(dataRunOffset) {
 		return
 	}
 
 	// Pull out the data run bytes
-	var dataRunsBytes []byte
+	dataRunsBytes := make([]byte, attributeLength)
 	copy(dataRunsBytes, attribute.AttributeBytes[dataRunOffset:])
 
 	// Send the bytes to be parsed
