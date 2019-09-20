@@ -22,12 +22,7 @@ type ResidentDataAttribute struct {
 }
 
 type NonResidentDataAttribute struct {
-	StartingVCN   int
-	EndingVCN     int
-	OffsetDataRun int8
-	AllocatedSize uint64
-	RealSize      uint64
-	DataRuns      DataRuns
+	DataRuns DataRuns
 }
 
 type UnparsedDataRun struct {
@@ -135,6 +130,7 @@ func (nonResidentDataAttributes *NonResidentDataAttribute) Parse(attribute Attri
 	copy(dataRunsBytes, attribute.AttributeBytes[dataRunOffset:])
 
 	// Send the bytes to be parsed
+	nonResidentDataAttributes.DataRuns = make(map[int]DataRun)
 	nonResidentDataAttributes.DataRuns.Parse(dataRunsBytes, bytesPerCluster)
 	if nonResidentDataAttributes.DataRuns == nil {
 		err = fmt.Errorf("failed to identify data runs: %w", err)
@@ -185,7 +181,7 @@ func (dataRuns *DataRuns) Parse(dataRunBytes []byte, bytesPerCluster int64) {
 			offsetBytes = make([]byte, len(dataRunBytes[(offset+dataRunSplit.lengthByteCount):(offset+dataRunSplit.lengthByteCount+dataRunSplit.offsetByteCount)]))
 			copy(offsetBytes, dataRunBytes[(offset+dataRunSplit.lengthByteCount):(offset+dataRunSplit.lengthByteCount+dataRunSplit.offsetByteCount)])
 
-			// Convert the bytes for the data run offset2 and length to little endian int64
+			// Convert the bytes for the data run offset and length to little endian int64
 			UnparsedDataRun.ClusterOffset = bin.LittleEndianBinaryToInt64(offsetBytes)
 			if UnparsedDataRun.ClusterOffset == 0 {
 				*dataRuns = nil
