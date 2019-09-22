@@ -1,6 +1,6 @@
 module github.com/AlecRandazzo/GoFor-MFT-Parser
 
-go 1.12
+go 1.13
 
 require (
 	github.com/AlecRandazzo/BinaryTransforms v1.0.0
