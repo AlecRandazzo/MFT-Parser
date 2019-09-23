@@ -51,11 +51,19 @@ func TestAttributes_Parse(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "null byte input",
+			args: args{
+				mftRecord:        nil,
+				attributesOffset: 4096,
+			},
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.got.Parse(tt.args.mftRecord, tt.args.attributesOffset)
-			if err != nil || !reflect.DeepEqual(tt.got, tt.want) {
+			tt.got.Parse(tt.args.mftRecord, tt.args.attributesOffset)
+			if !reflect.DeepEqual(tt.got, tt.want) {
 				t.Errorf("Test %v failed \ngot = %v, \nwant = %v", tt.name, tt.got, tt.want)
 			}
 		})

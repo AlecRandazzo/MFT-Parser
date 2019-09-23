@@ -11,8 +11,6 @@ package GoFor_MFT_Parser
 
 import (
 	"encoding/binary"
-	"encoding/hex"
-	"fmt"
 )
 
 type Attributes []Attribute
@@ -24,7 +22,7 @@ type Attribute struct {
 }
 
 // Parse MFT record attributes list.
-func (attributes *Attributes) Parse(mftRecord []byte, attributesOffset uint16) (err error) {
+func (attributes *Attributes) Parse(mftRecord []byte, attributesOffset uint16) {
 	const offsetAttributeSize = 0x04
 	const lengthAttributeSize = 0x04
 
@@ -50,12 +48,6 @@ func (attributes *Attributes) Parse(mftRecord []byte, attributesOffset uint16) (
 	//const lengthAttributeId = 0x02
 	//
 	//const offsetName = 0x32
-
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("panic %s, hex dump: %s", fmt.Sprint(r), hex.EncodeToString(mftRecord))
-		}
-	}()
 
 	// Init variable that tracks how far to the next Attribute
 	var distanceToNextAttribute uint16 = 0
@@ -85,9 +77,6 @@ func (attributes *Attributes) Parse(mftRecord []byte, attributesOffset uint16) (
 
 		// Track the distance to the next Attribute based on the size of the current Attribute
 		distanceToNextAttribute = attribute.AttributeSize
-		if distanceToNextAttribute == 0 {
-			break
-		}
 	}
 	return
 }
