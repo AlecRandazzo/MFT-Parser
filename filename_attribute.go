@@ -11,9 +11,7 @@ package GoFor_MFT_Parser
 
 import (
 	"encoding/binary"
-	"encoding/hex"
 	"errors"
-	"fmt"
 	bin "github.com/AlecRandazzo/BinaryTransforms"
 	ts "github.com/AlecRandazzo/Timestamp-Parser"
 )
@@ -100,35 +98,32 @@ func (filenameAttribute *FileNameAttribute) Parse(attribute Attribute) (err erro
 	const offsetFileNameSpace = 0x59
 	const offsetFileName = 0x5a
 
-	defer func() {
-		if r := recover(); r != nil {
-			err = errors.New("failed to parse filename Attribute")
-		}
-	}()
-
 	// The filename Attribute has a minimum length of 0x44
-	if len(attribute.AttributeBytes) < 0x44 {
+	attributeLength := len(attribute.AttributeBytes)
+	if attributeLength < 0x44 {
+		err = errors.New("FileNameAttribute.Parse() did not receive valid bytes")
 		return
 	}
 	filenameAttribute.AttributeSize, _ = bin.LittleEndianBinaryToUInt32(attribute.AttributeBytes[offsetAttributeSize : offsetAttributeSize+lengthAttributeSize])
 	filenameAttribute.FlagResident.Parse(attribute.AttributeBytes[offsetResidentFlag])
 	if filenameAttribute.FlagResident == false {
-		err = fmt.Errorf("parseFileNameAttribute(): non-resident filename Attribute encountered, hex dump: %s", hex.EncodeToString(attribute.AttributeBytes))
+		err = errors.New("parseFileNameAttribute(): non-resident filename Attribute encountered")
+		*filenameAttribute = FileNameAttribute{}
 		return
 	}
 
-	filenameAttribute.ParentDirRecordNumber = bin.LittleEndianBinaryToUInt64(attribute.AttributeBytes[offsetParentRecordNumber : offsetParentRecordNumber+lengthParentRecordNumber])
+	filenameAttribute.ParentDirRecordNumber, _ = bin.LittleEndianBinaryToUInt64(attribute.AttributeBytes[offsetParentRecordNumber : offsetParentRecordNumber+lengthParentRecordNumber])
 	filenameAttribute.ParentDirSequenceNumber, _ = bin.LittleEndianBinaryToUInt16(attribute.AttributeBytes[offsetParentDirSequenceNumber : offsetParentDirSequenceNumber+lengthParentDirSequenceNumber])
-	filenameAttribute.FnCreated.Parse(attribute.AttributeBytes[offsetFnCreated : offsetFnCreated+lengthFnCreated])
-	filenameAttribute.FnModified.Parse(attribute.AttributeBytes[offsetFnModified : offsetFnModified+lengthFnModified])
-	filenameAttribute.FnChanged.Parse(attribute.AttributeBytes[offsetFnChanged : offsetFnChanged+lengthFnChanged])
-	filenameAttribute.FnAccessed.Parse(attribute.AttributeBytes[offsetFnAccessed : offsetFnAccessed+lengthFnAccessed])
-	filenameAttribute.LogicalFileSize = bin.LittleEndianBinaryToUInt64(attribute.AttributeBytes[offsetLogicalFileSize : offsetLogicalFileSize+lengthLogicalFileSize])
-	filenameAttribute.PhysicalFileSize = bin.LittleEndianBinaryToUInt64(attribute.AttributeBytes[offSetPhysicalFileSize : offSetPhysicalFileSize+lengthPhysicalFileSize])
+	_ = filenameAttribute.FnCreated.Parse(attribute.AttributeBytes[offsetFnCreated : offsetFnCreated+lengthFnCreated])
+	_ = filenameAttribute.FnModified.Parse(attribute.AttributeBytes[offsetFnModified : offsetFnModified+lengthFnModified])
+	_ = filenameAttribute.FnChanged.Parse(attribute.AttributeBytes[offsetFnChanged : offsetFnChanged+lengthFnChanged])
+	_ = filenameAttribute.FnAccessed.Parse(attribute.AttributeBytes[offsetFnAccessed : offsetFnAccessed+lengthFnAccessed])
+	filenameAttribute.LogicalFileSize, _ = bin.LittleEndianBinaryToUInt64(attribute.AttributeBytes[offsetLogicalFileSize : offsetLogicalFileSize+lengthLogicalFileSize])
+	filenameAttribute.PhysicalFileSize, _ = bin.LittleEndianBinaryToUInt64(attribute.AttributeBytes[offSetPhysicalFileSize : offSetPhysicalFileSize+lengthPhysicalFileSize])
 	filenameAttribute.FileNameFlags.Parse(attribute.AttributeBytes[offsetFnFlags : offsetFnFlags+lengthFnFlags])
 	filenameAttribute.FileNameLength = attribute.AttributeBytes[offsetFileNameLength] * 2 // times two to account for unicode characters
 	filenameAttribute.FileNamespace = identifyFileNamespace(attribute.AttributeBytes[offsetFileNameSpace])
-	filenameAttribute.FileName = bin.UnicodeBytesToASCII(attribute.AttributeBytes[offsetFileName : offsetFileName+filenameAttribute.FileNameLength])
+	filenameAttribute.FileName, _ = bin.UnicodeBytesToASCII(attribute.AttributeBytes[offsetFileName : offsetFileName+int(filenameAttribute.FileNameLength)])
 	return
 }
 
@@ -161,7 +156,6 @@ func identifyFileNamespace(fileNamespaceFlag byte) (fileNameSpace string) {
 
 func (fileNameFlags *FileNameFlags) Parse(flagBytes []byte) {
 	unparsedFlags := binary.LittleEndian.Uint32(flagBytes)
-
 	//init values
 	fileNameFlags.ReadOnly = false
 	fileNameFlags.Hidden = false
@@ -181,15 +175,13 @@ func (fileNameFlags *FileNameFlags) Parse(flagBytes []byte) {
 
 	if unparsedFlags&0x0001 != 0 {
 		fileNameFlags.ReadOnly = true
+
 	}
 	if unparsedFlags&0x0002 != 0 {
 		fileNameFlags.Hidden = true
 	}
 	if unparsedFlags&0x0004 != 0 {
 		fileNameFlags.System = true
-	}
-	if unparsedFlags&0x0010 != 0 {
-		fileNameFlags.Directory = true
 	}
 	if unparsedFlags&0x0020 != 0 {
 		fileNameFlags.Archive = true
