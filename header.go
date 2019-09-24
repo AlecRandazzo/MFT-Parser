@@ -26,6 +26,11 @@ type RecordHeaderFlags struct {
 }
 
 func (recordHeader *RecordHeader) Parse(mftRecord []byte) (err error) {
+	if len(mftRecord) == 0 {
+		err = errors.New("RecordHeader.Parse() received nil bytes")
+		return
+	}
+
 	const offsetRecordMagicNumber = 0x00
 	const lengthRecordMagicNumber = 0x05
 	magicNumber := string(mftRecord[offsetRecordMagicNumber : offsetRecordMagicNumber+lengthRecordMagicNumber])
