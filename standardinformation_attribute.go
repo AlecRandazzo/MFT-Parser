@@ -39,17 +39,11 @@ func (standardInfo *StandardInformationAttributes) Parse(attribute Attribute) (e
 	const offsetSiAccessed = 0x30
 	const lengthSiAccessed = 0x08
 
-	defer func() {
-		if r := recover(); r != nil {
-			err = errors.New("failed to parse standard info Attribute")
-		}
-	}()
-
 	// The standard information Attribute has a minimum length of 0x30
 	if len(attribute.AttributeBytes) < 0x30 {
+		err = errors.New("StandardInformationAttributes.Parse() received invalid bytes")
 		return
 	}
-
 	// Check to see if the standard information Attribute is resident to the MFT or not
 	standardInfo.FlagResident.Parse(attribute.AttributeBytes[offsetResidentFlag])
 	if standardInfo.FlagResident == false {
@@ -58,9 +52,9 @@ func (standardInfo *StandardInformationAttributes) Parse(attribute Attribute) (e
 	}
 
 	// Parse timestamps
-	standardInfo.SiCreated.Parse(attribute.AttributeBytes[offsetSiCreated : offsetSiCreated+lengthSiCreated])
-	standardInfo.SiModified.Parse(attribute.AttributeBytes[offsetSiModified : offsetSiModified+lengthSiModified])
-	standardInfo.SiChanged.Parse(attribute.AttributeBytes[offsetSiChanged : offsetSiChanged+lengthSiChanged])
-	standardInfo.SiAccessed.Parse(attribute.AttributeBytes[offsetSiAccessed : offsetSiAccessed+lengthSiAccessed])
+	_ = standardInfo.SiCreated.Parse(attribute.AttributeBytes[offsetSiCreated : offsetSiCreated+lengthSiCreated])
+	_ = standardInfo.SiModified.Parse(attribute.AttributeBytes[offsetSiModified : offsetSiModified+lengthSiModified])
+	_ = standardInfo.SiChanged.Parse(attribute.AttributeBytes[offsetSiChanged : offsetSiChanged+lengthSiChanged])
+	_ = standardInfo.SiAccessed.Parse(attribute.AttributeBytes[offsetSiAccessed : offsetSiAccessed+lengthSiAccessed])
 	return
 }
