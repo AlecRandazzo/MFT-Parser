@@ -180,9 +180,13 @@ func (dataRunSplit *DataRunSplit) Parse(dataRun byte) {
 	// Convert the byte to a hex string
 	hexToSplit := fmt.Sprintf("%x", dataRun)
 
-	// Split the hex string in half and return each half as an int
-	dataRunSplit.offsetByteCount, _ = strconv.Atoi(string(hexToSplit[0]))
-	dataRunSplit.lengthByteCount, _ = strconv.Atoi(string(hexToSplit[1]))
-
+	if len(hexToSplit) == 1 {
+		dataRunSplit.offsetByteCount = 0
+		dataRunSplit.lengthByteCount, _ = strconv.Atoi(string(hexToSplit[0]))
+	} else {
+		// Split the hex string in half and return each half as an int
+		dataRunSplit.offsetByteCount, _ = strconv.Atoi(string(hexToSplit[0]))
+		dataRunSplit.lengthByteCount, _ = strconv.Atoi(string(hexToSplit[1]))
+	}
 	return
 }

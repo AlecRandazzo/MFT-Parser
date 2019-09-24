@@ -330,14 +330,18 @@ func Test_dataRunSplit_Parse(t *testing.T) {
 	}{
 		{
 			name: "Split 0x33",
-			got: DataRunSplit{
-				offsetByteCount: 0,
-				lengthByteCount: 0,
-			},
 			args: args{dataRun: byte(0x33)},
 			want: DataRunSplit{
 				offsetByteCount: 3,
 				lengthByteCount: 3,
+			},
+		},
+		{
+			name: "Split 0x04",
+			args: args{dataRun: byte(0x04)},
+			want: DataRunSplit{
+				offsetByteCount: 0,
+				lengthByteCount: 4,
 			},
 		},
 	}
