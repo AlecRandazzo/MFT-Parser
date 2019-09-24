@@ -10,7 +10,6 @@
 package GoFor_MFT_Parser
 
 import (
-	"encoding/hex"
 	"errors"
 	"fmt"
 	bin "github.com/AlecRandazzo/BinaryTransforms"
@@ -53,48 +52,29 @@ type DataAttribute struct {
 }
 
 func (dataAttribute *DataAttribute) Parse(attribute Attribute, bytesPerCluster int64) (err error) {
-	const codeData = 0x80
 	const offsetResidentFlag = 0x08
 
-	defer func() {
-		if r := recover(); r != nil {
-			err = errors.New("failed to parse data Attribute")
-		}
-	}()
-
 	if len(attribute.AttributeBytes) < 0x18 {
+		err = errors.New("DataAttribute.Parse() did not receive valid bytes")
 		return
 	}
 
 	//TODO: handle resident data
 	if attribute.AttributeBytes[offsetResidentFlag] == 0x00 {
 		dataAttribute.FlagResident = true
-		err = dataAttribute.ResidentDataAttributes.Parse(attribute)
-		if err != nil {
-			err = fmt.Errorf("failed to parse resident data Attribute: %w", err)
-			return
-		}
+		_ = dataAttribute.ResidentDataAttributes.Parse(attribute)
 		return
 	} else {
 		dataAttribute.FlagResident = false
-		err = dataAttribute.NonResidentDataAttributes.Parse(attribute, bytesPerCluster)
-		if err != nil {
-			err = fmt.Errorf("failed to parse non resident data Attribute: %w", err)
-			return
-		}
+		_ = dataAttribute.NonResidentDataAttributes.Parse(attribute, bytesPerCluster)
 	}
 
 	return
 }
 
 func (residentDataAttribute *ResidentDataAttribute) Parse(attribute Attribute) (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("panic recovery %s, hex dump: %s", fmt.Sprint(r), hex.EncodeToString(attribute.AttributeBytes))
-		}
-	}()
-
 	if len(attribute.AttributeBytes) < 0x18 {
+		err = errors.New("ResidentDataAttribute.Parse() did not receive valid bytes")
 		return
 	}
 
@@ -106,14 +86,9 @@ func (residentDataAttribute *ResidentDataAttribute) Parse(attribute Attribute) (
 
 func (nonResidentDataAttributes *NonResidentDataAttribute) Parse(attribute Attribute, bytesPerCluster int64) (err error) {
 
-	defer func() {
-		if r := recover(); r != nil {
-			err = fmt.Errorf("panic recovery %s, hex dump: %s", fmt.Sprint(r), hex.EncodeToString(attribute.AttributeBytes))
-		}
-	}()
-
 	attributeLength := len(attribute.AttributeBytes)
 	if attributeLength <= 0x20 {
+		err = errors.New("NonResidentDataAttribute.Parse() did not receive valid bytes")
 		return
 	}
 
@@ -122,6 +97,7 @@ func (nonResidentDataAttributes *NonResidentDataAttribute) Parse(attribute Attri
 	dataRunOffset := attribute.AttributeBytes[offsetDataRunOffset]
 
 	if attributeLength < int(dataRunOffset) {
+		err = errors.New("attribute offset longer than length")
 		return
 	}
 
@@ -131,26 +107,18 @@ func (nonResidentDataAttributes *NonResidentDataAttribute) Parse(attribute Attri
 
 	// Send the bytes to be parsed
 	nonResidentDataAttributes.DataRuns = make(map[int]DataRun)
-	nonResidentDataAttributes.DataRuns.Parse(dataRunsBytes, bytesPerCluster)
-	if nonResidentDataAttributes.DataRuns == nil {
-		err = fmt.Errorf("failed to identify data runs: %w", err)
-		return
-	}
+	_ = nonResidentDataAttributes.DataRuns.Parse(dataRunsBytes, bytesPerCluster)
 
 	return
 }
 
-func (dataRuns *DataRuns) Parse(dataRunBytes []byte, bytesPerCluster int64) {
-	defer func() {
-		if r := recover(); r != nil {
-			return
-		}
-	}()
+func (dataRuns *DataRuns) Parse(dataRunBytes []byte, bytesPerCluster int64) (err error) {
+	if dataRunBytes == nil {
+		err = errors.New("dataruns.Parse() received null bytes")
+		*dataRuns = nil
+		return
+	}
 
-	/*
-		This function will parse the data runs from an MFT record.
-		See the following for a good write up on data runs: https://homepage.cs.uri.edu/~thenry/csc487/video/66_NTFS_Data_Runs.pdf
-	*/
 	// Initialize a few variables
 	UnparsedDataRun := UnparsedDataRun{}
 	UnparsedDataRuns := make(UnparsedDataRuns)
@@ -159,7 +127,7 @@ func (dataRuns *DataRuns) Parse(dataRunBytes []byte, bytesPerCluster int64) {
 
 	for {
 		// Checks to see if we reached the end of the data runs. If so, break out of the loop.
-		if dataRunBytes[offset] == 0x00 {
+		if dataRunBytes[offset] == 0x00 || len(dataRunBytes) < offset {
 			break
 		} else {
 			// Take the first byte of a data run and send it to get split so we know how many bytes account for the
@@ -167,10 +135,6 @@ func (dataRuns *DataRuns) Parse(dataRunBytes []byte, bytesPerCluster int64) {
 			byteToBeSplit := dataRunBytes[offset]
 			dataRunSplit := DataRunSplit{}
 			dataRunSplit.Parse(byteToBeSplit)
-			if dataRunSplit.offsetByteCount == 0 && dataRunSplit.lengthByteCount == 0 {
-				*dataRuns = nil
-				return
-			}
 			offset += 1
 
 			// Pull out the the bytes that account for the data runs offset2 and length
@@ -182,28 +146,17 @@ func (dataRuns *DataRuns) Parse(dataRunBytes []byte, bytesPerCluster int64) {
 			copy(offsetBytes, dataRunBytes[(offset+dataRunSplit.lengthByteCount):(offset+dataRunSplit.lengthByteCount+dataRunSplit.offsetByteCount)])
 
 			// Convert the bytes for the data run offset and length to little endian int64
-			UnparsedDataRun.ClusterOffset = bin.LittleEndianBinaryToInt64(offsetBytes)
-			if UnparsedDataRun.ClusterOffset == 0 {
-				*dataRuns = nil
-				return
-			}
+			UnparsedDataRun.ClusterOffset, _ = bin.LittleEndianBinaryToInt64(offsetBytes)
+			UnparsedDataRun.NumberOfClusters, _ = bin.LittleEndianBinaryToInt64(lengthBytes)
 
-			UnparsedDataRun.NumberOfClusters = bin.LittleEndianBinaryToInt64(lengthBytes)
-			if UnparsedDataRun.NumberOfClusters == 0 {
-				*dataRuns = nil
-				return
-			}
 			// Append the data run to our data run struct
 			UnparsedDataRuns[runCounter] = UnparsedDataRun
 
 			// Increment the number order in preparation for the next data run.
 			runCounter += 1
 
-			// Set the offset2 tracker to the position of the next data run
+			// Set the offset tracker to the position of the next data run
 			offset = offset + dataRunSplit.lengthByteCount + dataRunSplit.offsetByteCount
-			if len(dataRunBytes) < offset {
-				break
-			}
 		}
 	}
 
@@ -226,25 +179,10 @@ func (dataRunSplit *DataRunSplit) Parse(dataRun byte) {
 	*/
 	// Convert the byte to a hex string
 	hexToSplit := fmt.Sprintf("%x", dataRun)
-	if len(hexToSplit) != 2 {
-		dataRunSplit.offsetByteCount = 0
-		dataRunSplit.lengthByteCount = 0
-		return
-	}
 
 	// Split the hex string in half and return each half as an int
-	var err error
-	dataRunSplit.offsetByteCount, err = strconv.Atoi(string(hexToSplit[0]))
-	if err != nil {
-		dataRunSplit.offsetByteCount = 0
-		dataRunSplit.lengthByteCount = 0
-		return
-	}
-	dataRunSplit.lengthByteCount, err = strconv.Atoi(string(hexToSplit[1]))
-	if err != nil {
-		dataRunSplit.offsetByteCount = 0
-		dataRunSplit.lengthByteCount = 0
-		return
-	}
+	dataRunSplit.offsetByteCount, _ = strconv.Atoi(string(hexToSplit[0]))
+	dataRunSplit.lengthByteCount, _ = strconv.Atoi(string(hexToSplit[1]))
+
 	return
 }
