@@ -25,7 +25,7 @@ type RecordHeaderFlags struct {
 	FlagDirectory bool
 }
 
-func (recordHeader *RecordHeader) Parse(mftRecord []byte) (err error) {
+func (recordHeader *RecordHeader) Parse(mftRecord RawMasterFileTableRecord) (err error) {
 	if len(mftRecord) == 0 {
 		err = errors.New("RecordHeader.Parse() received nil bytes")
 		return

@@ -22,7 +22,7 @@ type Attribute struct {
 }
 
 // Parse MFT record attributes list.
-func (attributes *Attributes) Parse(mftRecord []byte, attributesOffset uint16) {
+func (attributes *Attributes) Parse(mftRecord RawMasterFileTableRecord, attributesOffset uint16) {
 	const offsetAttributeSize = 0x04
 	const lengthAttributeSize = 0x04
 
@@ -81,7 +81,7 @@ func (attributes *Attributes) Parse(mftRecord []byte, attributesOffset uint16) {
 	return
 }
 
-func (attribute *Attribute) Parse(mftRecord []byte, attributeOffset uint16) {
+func (attribute *Attribute) Parse(mftRecord RawMasterFileTableRecord, attributeOffset uint16) {
 	const offsetAttributeSize = 0x04
 	const lengthAttributeSize = 0x04
 

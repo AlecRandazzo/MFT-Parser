@@ -1,7 +1,6 @@
 package GoFor_MFT_Parser
 
 import (
-	"fmt"
 	"reflect"
 	"testing"
 )
@@ -311,7 +310,6 @@ func TestResidentDataAttribute_Parse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := tt.got.Parse(tt.args.attribute)
 			if !reflect.DeepEqual(tt.got, tt.want) || (err != nil) != tt.wantErr {
-				fmt.Println(err)
 				t.Errorf("Test %v failed \ngot = %v, \nwant = %v", tt.name, tt.got, tt.want)
 			}
 		})

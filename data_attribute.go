@@ -160,7 +160,7 @@ func (dataRuns *DataRuns) Parse(dataRunBytes []byte, bytesPerCluster int64) (err
 		}
 	}
 
-	// Resolve Data Runs
+	// resolve Data Runs
 	dataRunOffset := int64(0)
 	for i := 0; i < len(UnparsedDataRuns); i++ {
 		dataRunOffset = dataRunOffset + (UnparsedDataRuns[i].ClusterOffset * bytesPerCluster)
