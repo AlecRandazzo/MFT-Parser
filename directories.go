@@ -53,6 +53,7 @@ func (rawMftRecord *RawMasterFileTableRecord) IsThisADirectory() (result bool, e
 func (unresolvedDirectoryList *unresolvedDirectoryList) create(inboundBuffer *chan RawMasterFileTableRecord, directoryListChannel *chan unresolvedDirectoryList, waitGroup *sync.WaitGroup) {
 	defer waitGroup.Done()
 	openChannel := true
+	const codeFileName = 0x30
 	//*unresolvedDirectoryList = make(map[uint64]directory)
 	for openChannel == true {
 		var rawMftRecord RawMasterFileTableRecord
@@ -69,7 +70,6 @@ func (unresolvedDirectoryList *unresolvedDirectoryList) create(inboundBuffer *ch
 
 		mftRecord.Attributes.Parse(rawMftRecord, mftRecord.RecordHeader.AttributesOffset)
 
-		const codeFileName = 0x30
 		for _, attribute := range mftRecord.Attributes {
 			switch attribute.AttributeType {
 			case codeFileName:
@@ -113,30 +113,34 @@ func (directoryTree *DirectoryTree) resolve(unresolvedDirectoryListChannel *chan
 		}
 	}
 
-	for recordNumber, directoryMetadata := range masterUnresolvedDirectoryList {
+	directoryTree.findParentDirectories(&masterUnresolvedDirectoryList)
+	return
+}
+
+func (directoryTree *DirectoryTree) findParentDirectories(masterUnresolvedDirectoryList *unresolvedDirectoryList) {
+	for recordNumber, directoryMetadata := range *masterUnresolvedDirectoryList {
 		mappingDirectory := directoryMetadata.DirectoryName
 		parentRecordNumberPointer := directoryMetadata.ParentRecordNumber
 		for {
-			if _, ok := masterUnresolvedDirectoryList[parentRecordNumberPointer]; ok {
+			if _, ok := (*masterUnresolvedDirectoryList)[parentRecordNumberPointer]; ok {
 				if recordNumber == 5 {
-					mappingDirectory = ":\\"
+					mappingDirectory = "\\"
 					(*directoryTree)[recordNumber] = mappingDirectory
 					break
 				}
 				if parentRecordNumberPointer == 5 {
-					mappingDirectory = ":\\" + mappingDirectory
+					mappingDirectory = "\\" + mappingDirectory
 					(*directoryTree)[recordNumber] = mappingDirectory
 					break
 				}
-				mappingDirectory = masterUnresolvedDirectoryList[parentRecordNumberPointer].DirectoryName + "\\" + mappingDirectory
-				parentRecordNumberPointer = masterUnresolvedDirectoryList[parentRecordNumberPointer].ParentRecordNumber
+				mappingDirectory = (*masterUnresolvedDirectoryList)[parentRecordNumberPointer].DirectoryName + "\\" + mappingDirectory
+				parentRecordNumberPointer = (*masterUnresolvedDirectoryList)[parentRecordNumberPointer].ParentRecordNumber
 				continue
 			}
 			(*directoryTree)[recordNumber] = "$ORPHANFILE\\" + mappingDirectory
 			break
 		}
 	}
-	return
 }
 
 // Builds a list of directories for the purpose of of mapping MFT records to their parent directories.

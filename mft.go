@@ -26,10 +26,10 @@ type MasterFileTableRecord struct {
 	FileNameAttributes            []FileNameAttribute
 	DataAttributes                DataAttribute
 	Attributes                    Attributes
-	UseFullMftFields              UseFullMftFields
+	UseFullMftFields              useFullMftFields
 }
 
-type UseFullMftFields struct {
+type useFullMftFields struct {
 	RecordNumber     uint32       `json:"RecordNumber"`
 	FilePath         string       `json:"FilePath"`
 	FullPath         string       `json:"FullPath"`
@@ -50,11 +50,6 @@ type UseFullMftFields struct {
 	PhysicalFileSize uint64       `json:"PhysicalFileSize"`
 }
 
-type MftFile struct {
-	DirectoryTree DirectoryTree
-	OutputChannel chan MasterFileTableRecord
-}
-
 type RawMasterFileTableRecord []byte
 
 // Parse an already extracted MFT and write the results to a file.
@@ -66,7 +61,7 @@ func ParseMFT(reader io.Reader, writer OutputWriters, numberOfWorkers int) (err 
 		return
 	}
 
-	outputChannel := make(chan UseFullMftFields, 100)
+	outputChannel := make(chan useFullMftFields, 100)
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(1)
 
@@ -92,35 +87,7 @@ func ParseMFT(reader io.Reader, writer OutputWriters, numberOfWorkers int) (err 
 			continue
 		}
 
-		for _, record := range mftRecord.FileNameAttributes {
-			if strings.Contains(record.FileNamespace, "WIN32") || strings.Contains(record.FileNamespace, "POSIX") {
-				if directory, ok := directoryTree[record.ParentDirRecordNumber]; ok {
-					mftRecord.UseFullMftFields.FileName = record.FileName
-					mftRecord.UseFullMftFields.FilePath = directory
-					mftRecord.UseFullMftFields.FullPath = mftRecord.UseFullMftFields.FilePath + mftRecord.UseFullMftFields.FileName
-				} else {
-					mftRecord.UseFullMftFields.FileName = record.FileName
-					mftRecord.UseFullMftFields.FilePath = "$ORPHANFILE"
-					mftRecord.UseFullMftFields.FullPath = mftRecord.UseFullMftFields.FilePath + mftRecord.UseFullMftFields.FileName
-				}
-				mftRecord.UseFullMftFields.RecordNumber = mftRecord.RecordHeader.RecordNumber
-				mftRecord.UseFullMftFields.SystemFlag = record.FileNameFlags.System
-				mftRecord.UseFullMftFields.HiddenFlag = record.FileNameFlags.Hidden
-				mftRecord.UseFullMftFields.ReadOnlyFlag = record.FileNameFlags.ReadOnly
-				mftRecord.UseFullMftFields.DirectoryFlag = mftRecord.RecordHeader.Flags.FlagDirectory
-				mftRecord.UseFullMftFields.DeletedFlag = mftRecord.RecordHeader.Flags.FlagDeleted
-				mftRecord.UseFullMftFields.FnCreated = record.FnCreated
-				mftRecord.UseFullMftFields.FnModified = record.FnModified
-				mftRecord.UseFullMftFields.FnAccessed = record.FnAccessed
-				mftRecord.UseFullMftFields.FnChanged = record.FnChanged
-				mftRecord.UseFullMftFields.SiCreated = mftRecord.StandardInformationAttributes.SiCreated
-				mftRecord.UseFullMftFields.SiModified = mftRecord.StandardInformationAttributes.SiModified
-				mftRecord.UseFullMftFields.SiAccessed = mftRecord.StandardInformationAttributes.SiAccessed
-				mftRecord.UseFullMftFields.SiChanged = mftRecord.StandardInformationAttributes.SiChanged
-				mftRecord.UseFullMftFields.PhysicalFileSize = record.PhysicalFileSize
-				break
-			}
-		}
+		mftRecord.UseFullMftFields.get(&mftRecord, &directoryTree)
 		outputChannel <- mftRecord.UseFullMftFields
 
 	}
@@ -129,13 +96,45 @@ func ParseMFT(reader io.Reader, writer OutputWriters, numberOfWorkers int) (err 
 	return
 }
 
+func (useFullMftFields *useFullMftFields) get(mftRecord *MasterFileTableRecord, directoryTree *DirectoryTree) {
+	for _, record := range mftRecord.FileNameAttributes {
+		if strings.Contains(record.FileNamespace, "WIN32") || strings.Contains(record.FileNamespace, "POSIX") {
+			if directory, ok := (*directoryTree)[record.ParentDirRecordNumber]; ok {
+				mftRecord.UseFullMftFields.FileName = record.FileName
+				mftRecord.UseFullMftFields.FilePath = directory
+				mftRecord.UseFullMftFields.FullPath = mftRecord.UseFullMftFields.FilePath + mftRecord.UseFullMftFields.FileName
+			} else {
+				mftRecord.UseFullMftFields.FileName = record.FileName
+				mftRecord.UseFullMftFields.FilePath = "$ORPHANFILE"
+				mftRecord.UseFullMftFields.FullPath = mftRecord.UseFullMftFields.FilePath + mftRecord.UseFullMftFields.FileName
+			}
+			mftRecord.UseFullMftFields.RecordNumber = mftRecord.RecordHeader.RecordNumber
+			mftRecord.UseFullMftFields.SystemFlag = record.FileNameFlags.System
+			mftRecord.UseFullMftFields.HiddenFlag = record.FileNameFlags.Hidden
+			mftRecord.UseFullMftFields.ReadOnlyFlag = record.FileNameFlags.ReadOnly
+			mftRecord.UseFullMftFields.DirectoryFlag = mftRecord.RecordHeader.Flags.FlagDirectory
+			mftRecord.UseFullMftFields.DeletedFlag = mftRecord.RecordHeader.Flags.FlagDeleted
+			mftRecord.UseFullMftFields.FnCreated = record.FnCreated
+			mftRecord.UseFullMftFields.FnModified = record.FnModified
+			mftRecord.UseFullMftFields.FnAccessed = record.FnAccessed
+			mftRecord.UseFullMftFields.FnChanged = record.FnChanged
+			mftRecord.UseFullMftFields.SiCreated = mftRecord.StandardInformationAttributes.SiCreated
+			mftRecord.UseFullMftFields.SiModified = mftRecord.StandardInformationAttributes.SiModified
+			mftRecord.UseFullMftFields.SiAccessed = mftRecord.StandardInformationAttributes.SiAccessed
+			mftRecord.UseFullMftFields.SiChanged = mftRecord.StandardInformationAttributes.SiChanged
+			mftRecord.UseFullMftFields.PhysicalFileSize = record.PhysicalFileSize
+			break
+		}
+	}
+}
+
 // Parse the bytes of an MFT record
 func (rawMftRecord *RawMasterFileTableRecord) Parse() (mftRecord MasterFileTableRecord, err error) {
 	err = mftRecord.RecordHeader.Parse(*rawMftRecord)
 	if err != nil {
 		err = fmt.Errorf("%w", err)
 	}
-	rawMftRecord.TrimSlackSpace()
+	rawMftRecord.trimSlackSpace()
 	mftRecord.Attributes.Parse(*rawMftRecord, mftRecord.RecordHeader.AttributesOffset)
 	if err != nil {
 		err = fmt.Errorf("failed to get Attribute list: %w", err)
@@ -173,7 +172,7 @@ func (rawMftRecord *RawMasterFileTableRecord) Parse() (mftRecord MasterFileTable
 }
 
 // Trims off slack space after end sequence 0xffffffff
-func (rawMftRecord *RawMasterFileTableRecord) TrimSlackSpace() {
+func (rawMftRecord *RawMasterFileTableRecord) trimSlackSpace() {
 	lenMftRecordBytes := len(*rawMftRecord)
 	mftRecordEndByteSequence := []byte{0xff, 0xff, 0xff, 0xff}
 	for i := 0; i < (lenMftRecordBytes - 4); i++ {

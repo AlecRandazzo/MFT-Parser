@@ -1,30 +1,10 @@
 package GoFor_MFT_Parser
 
 import (
-	"os"
 	"reflect"
 	"sync"
 	"testing"
 )
-
-func TestDirectoryList_Create(t *testing.T) {
-	type args struct {
-		inboundBuffer        *chan []byte
-		directoryListChannel *chan map[uint64]directory
-		waitGroup            *sync.WaitGroup
-	}
-	tests := []struct {
-		name          string
-		directoryList unresolvedDirectoryList
-		args          args
-	}{
-		// TODO: Add test cases.
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-		})
-	}
-}
 
 func TestMasterFileTableRecord_isThisADirectory(t *testing.T) {
 	type args struct {
@@ -69,41 +49,118 @@ func TestMasterFileTableRecord_isThisADirectory(t *testing.T) {
 	}
 }
 
-func TestMftFile_BuildDirectoryTree(t *testing.T) {
-	type fields struct {
-		FileHandle        *os.File
-		MappedDirectories map[uint64]string
-		OutputChannel     chan MasterFileTableRecord
+func TestDirectoryTree_findParentDirectories(t *testing.T) {
+	type args struct {
+		masterUnresolvedDirectoryList *unresolvedDirectoryList
 	}
 	tests := []struct {
-		name    string
-		fields  fields
-		wantErr bool
+		name string
+		got  DirectoryTree
+		args args
+		want DirectoryTree
 	}{
-		// TODO: Add test cases.
+		{
+			name: "root dir",
+			args: args{
+				masterUnresolvedDirectoryList: &unresolvedDirectoryList{
+					5: directory{
+						DirectoryName:      "\\",
+						ParentRecordNumber: 5,
+					},
+				}},
+			want: DirectoryTree{
+				5: "\\",
+			},
+		},
+		{
+			name: "depth one off root",
+			args: args{
+				masterUnresolvedDirectoryList: &unresolvedDirectoryList{
+					5: directory{
+						DirectoryName:      "\\",
+						ParentRecordNumber: 5,
+					},
+					6: directory{
+						DirectoryName:      "test",
+						ParentRecordNumber: 5,
+					},
+				}},
+			want: DirectoryTree{
+				5: "\\",
+				6: "\\test",
+			},
+		},
+		{
+			name: "depth two off root",
+			args: args{
+				masterUnresolvedDirectoryList: &unresolvedDirectoryList{
+					5: directory{
+						DirectoryName:      "\\",
+						ParentRecordNumber: 5,
+					},
+					6: directory{
+						DirectoryName:      "test",
+						ParentRecordNumber: 5,
+					},
+					7: directory{
+						DirectoryName:      "test2",
+						ParentRecordNumber: 6,
+					},
+				}},
+			want: DirectoryTree{
+				5: "\\",
+				6: "\\test",
+				7: "\\test\\test2",
+			},
+		},
+		{
+			name: "orphan file",
+			args: args{
+				masterUnresolvedDirectoryList: &unresolvedDirectoryList{
+					5: directory{
+						DirectoryName:      "\\",
+						ParentRecordNumber: 5,
+					},
+					7: directory{
+						DirectoryName:      "test2",
+						ParentRecordNumber: 6,
+					},
+				}},
+			want: DirectoryTree{
+				5: "\\",
+				7: "$ORPHANFILE\\test2",
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.got = make(DirectoryTree)
+			tt.got.findParentDirectories(tt.args.masterUnresolvedDirectoryList)
+			if !reflect.DeepEqual(tt.got, tt.want) {
+				t.Errorf("Test %v failed \ngot = %v, \nwant = %v", tt.name, tt.got, tt.want)
+			}
 		})
 	}
 }
 
-func TestMftFile_CombineDirectoryInformation(t *testing.T) {
-	type fields struct {
-		FileHandle        *os.File
-		MappedDirectories map[uint64]string
-		OutputChannel     chan MasterFileTableRecord
-	}
+func TestDirectoryTree_resolve(t *testing.T) {
 	type args struct {
-		directoryListChannel        *chan map[uint64]directory
-		waitForDirectoryCombination *sync.WaitGroup
+		unresolvedDirectoryListChannel *chan unresolvedDirectoryList
+		waitForDirectoryResolution     *sync.WaitGroup
 	}
 	tests := []struct {
-		name   string
-		fields fields
-		args   args
+		name string
+		want DirectoryTree
+		args args
+		got  DirectoryTree
 	}{
-		// TODO: Add test cases.
+		{
+			name: "test1",
+			args: args{
+				unresolvedDirectoryListChannel: nil,
+				waitForDirectoryResolution:     nil,
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

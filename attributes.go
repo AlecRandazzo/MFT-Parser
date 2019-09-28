@@ -95,7 +95,6 @@ func (attribute *Attribute) Parse(mftRecord RawMasterFileTableRecord, attributeO
 	return
 }
 
-//TODO write a unit test for isThisAnAttribute()
 func isThisAnAttribute(attributeHeaderToCheck byte) (result bool) {
 	// Init a byte slice that tracks all possible valid MFT Attribute types.
 	// We'll be used this to verify if what we are looking at is actually an MFT Attribute.

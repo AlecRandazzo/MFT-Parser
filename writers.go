@@ -20,14 +20,14 @@ import (
 )
 
 type OutputWriters interface {
-	Write(outputChannel *chan UseFullMftFields, waitGroup *sync.WaitGroup) (err error)
+	Write(outputChannel *chan useFullMftFields, waitGroup *sync.WaitGroup) (err error)
 }
 
 type CsvWriter struct {
 	OutFile io.Writer
 }
 
-func (writer CsvWriter) Write(outputChannel *chan UseFullMftFields, waitGroup *sync.WaitGroup) (err error) {
+func (writer CsvWriter) Write(outputChannel *chan useFullMftFields, waitGroup *sync.WaitGroup) (err error) {
 
 	csvWriter := csv.NewWriter(writer.OutFile)
 	csvWriter.Comma = '|'
@@ -58,7 +58,7 @@ func (writer CsvWriter) Write(outputChannel *chan UseFullMftFields, waitGroup *s
 	openChannel := true
 	for openChannel != false {
 		var csvRow []string
-		var file UseFullMftFields
+		var file useFullMftFields
 		file, openChannel = <-*outputChannel
 		csvRow = []string{
 			fmt.Sprint(file.RecordNumber),                             //Record Number
