@@ -69,7 +69,6 @@ func (unresolvedDirectoryList *unresolvedDirectoryList) create(inboundBuffer *ch
 		}
 
 		mftRecord.Attributes.Parse(rawMftRecord, mftRecord.RecordHeader.AttributesOffset)
-
 		for _, attribute := range mftRecord.Attributes {
 			switch attribute.AttributeType {
 			case codeFileName:
@@ -112,7 +111,6 @@ func (directoryTree *DirectoryTree) resolve(unresolvedDirectoryListChannel *chan
 			masterUnresolvedDirectoryList[key] = value
 		}
 	}
-
 	directoryTree.findParentDirectories(&masterUnresolvedDirectoryList)
 	return
 }
