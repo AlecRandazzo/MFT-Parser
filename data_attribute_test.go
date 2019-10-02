@@ -30,10 +30,10 @@ func TestDataAttribute_Parse(t *testing.T) {
 			want: DataAttribute{
 				TotalSize:    0,
 				FlagResident: false,
-				ResidentDataAttributes: ResidentDataAttribute{
+				ResidentDataAttribute: ResidentDataAttribute{
 					ResidentData: nil,
 				},
-				NonResidentDataAttributes: NonResidentDataAttribute{
+				NonResidentDataAttribute: NonResidentDataAttribute{
 					DataRuns: DataRuns{
 						0: {
 							AbsoluteOffset: 3221225472,
@@ -94,10 +94,10 @@ func TestDataAttribute_Parse(t *testing.T) {
 			want: DataAttribute{
 				TotalSize:    0,
 				FlagResident: true,
-				ResidentDataAttributes: ResidentDataAttribute{
+				ResidentDataAttribute: ResidentDataAttribute{
 					ResidentData: []byte{2, 0, 0, 0, 0, 0, 0, 0, 172, 3, 0, 0, 0, 0, 0, 0, 48, 238, 136, 38, 104, 47, 213, 1, 39, 0, 0, 0, 67, 0, 58, 0, 92, 0, 85, 0, 115, 0, 101, 0, 114, 0, 115, 0, 92, 0, 80, 0, 117, 0, 98, 0, 108, 0, 105, 0, 99, 0, 92, 0, 68, 0, 101, 0, 115, 0, 107, 0, 116, 0, 111, 0, 112, 0, 92, 0, 66, 0, 97, 0, 116, 0, 116, 0, 108, 0, 101, 0, 46, 0, 110, 0, 101, 0, 116, 0, 46, 0, 108, 0, 110, 0, 107, 0, 0, 0, 0, 0, 0, 0, 0, 0},
 				},
-				NonResidentDataAttributes: NonResidentDataAttribute{},
+				NonResidentDataAttribute: NonResidentDataAttribute{},
 			},
 		},
 	}

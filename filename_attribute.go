@@ -61,7 +61,9 @@ type FileNameFlags struct {
 	IndexView         bool
 }
 
-func (filenameAttribute *FileNameAttribute) Parse(attribute Attribute) (err error) {
+type RawFileNameAttribute []byte
+
+func (rawFileNameAttribute RawFileNameAttribute) Parse() (filenameAttribute FileNameAttribute, err error) {
 	const offsetAttributeSize = 0x04
 	const lengthAttributeSize = 0x04
 
@@ -99,31 +101,30 @@ func (filenameAttribute *FileNameAttribute) Parse(attribute Attribute) (err erro
 	const offsetFileName = 0x5a
 
 	// The filename Attribute has a minimum length of 0x44
-	attributeLength := len(attribute.AttributeBytes)
+	attributeLength := len(rawFileNameAttribute)
 	if attributeLength < 0x44 {
 		err = errors.New("FileNameAttribute.Parse() did not receive valid bytes")
 		return
 	}
-	filenameAttribute.AttributeSize, _ = bin.LittleEndianBinaryToUInt32(attribute.AttributeBytes[offsetAttributeSize : offsetAttributeSize+lengthAttributeSize])
-	filenameAttribute.FlagResident.Parse(attribute.AttributeBytes[offsetResidentFlag])
+	filenameAttribute.AttributeSize, _ = bin.LittleEndianBinaryToUInt32(rawFileNameAttribute[offsetAttributeSize : offsetAttributeSize+lengthAttributeSize])
+	filenameAttribute.FlagResident.Parse(rawFileNameAttribute[offsetResidentFlag])
 	if filenameAttribute.FlagResident == false {
 		err = errors.New("parseFileNameAttribute(): non-resident filename Attribute encountered")
-		*filenameAttribute = FileNameAttribute{}
 		return
 	}
 
-	filenameAttribute.ParentDirRecordNumber, _ = bin.LittleEndianBinaryToUInt64(attribute.AttributeBytes[offsetParentRecordNumber : offsetParentRecordNumber+lengthParentRecordNumber])
-	filenameAttribute.ParentDirSequenceNumber, _ = bin.LittleEndianBinaryToUInt16(attribute.AttributeBytes[offsetParentDirSequenceNumber : offsetParentDirSequenceNumber+lengthParentDirSequenceNumber])
-	_ = filenameAttribute.FnCreated.Parse(attribute.AttributeBytes[offsetFnCreated : offsetFnCreated+lengthFnCreated])
-	_ = filenameAttribute.FnModified.Parse(attribute.AttributeBytes[offsetFnModified : offsetFnModified+lengthFnModified])
-	_ = filenameAttribute.FnChanged.Parse(attribute.AttributeBytes[offsetFnChanged : offsetFnChanged+lengthFnChanged])
-	_ = filenameAttribute.FnAccessed.Parse(attribute.AttributeBytes[offsetFnAccessed : offsetFnAccessed+lengthFnAccessed])
-	filenameAttribute.LogicalFileSize, _ = bin.LittleEndianBinaryToUInt64(attribute.AttributeBytes[offsetLogicalFileSize : offsetLogicalFileSize+lengthLogicalFileSize])
-	filenameAttribute.PhysicalFileSize, _ = bin.LittleEndianBinaryToUInt64(attribute.AttributeBytes[offSetPhysicalFileSize : offSetPhysicalFileSize+lengthPhysicalFileSize])
-	filenameAttribute.FileNameFlags.Parse(attribute.AttributeBytes[offsetFnFlags : offsetFnFlags+lengthFnFlags])
-	filenameAttribute.FileNameLength = attribute.AttributeBytes[offsetFileNameLength] * 2 // times two to account for unicode characters
-	filenameAttribute.FileNamespace = identifyFileNamespace(attribute.AttributeBytes[offsetFileNameSpace])
-	filenameAttribute.FileName, _ = bin.UnicodeBytesToASCII(attribute.AttributeBytes[offsetFileName : offsetFileName+int(filenameAttribute.FileNameLength)])
+	filenameAttribute.ParentDirRecordNumber, _ = bin.LittleEndianBinaryToUInt64(rawFileNameAttribute[offsetParentRecordNumber : offsetParentRecordNumber+lengthParentRecordNumber])
+	filenameAttribute.ParentDirSequenceNumber, _ = bin.LittleEndianBinaryToUInt16(rawFileNameAttribute[offsetParentDirSequenceNumber : offsetParentDirSequenceNumber+lengthParentDirSequenceNumber])
+	_ = filenameAttribute.FnCreated.Parse(rawFileNameAttribute[offsetFnCreated : offsetFnCreated+lengthFnCreated])
+	_ = filenameAttribute.FnModified.Parse(rawFileNameAttribute[offsetFnModified : offsetFnModified+lengthFnModified])
+	_ = filenameAttribute.FnChanged.Parse(rawFileNameAttribute[offsetFnChanged : offsetFnChanged+lengthFnChanged])
+	_ = filenameAttribute.FnAccessed.Parse(rawFileNameAttribute[offsetFnAccessed : offsetFnAccessed+lengthFnAccessed])
+	filenameAttribute.LogicalFileSize, _ = bin.LittleEndianBinaryToUInt64(rawFileNameAttribute[offsetLogicalFileSize : offsetLogicalFileSize+lengthLogicalFileSize])
+	filenameAttribute.PhysicalFileSize, _ = bin.LittleEndianBinaryToUInt64(rawFileNameAttribute[offSetPhysicalFileSize : offSetPhysicalFileSize+lengthPhysicalFileSize])
+	filenameAttribute.FileNameFlags.Parse(rawFileNameAttribute[offsetFnFlags : offsetFnFlags+lengthFnFlags])
+	filenameAttribute.FileNameLength = rawFileNameAttribute[offsetFileNameLength] * 2 // times two to account for unicode characters
+	filenameAttribute.FileNamespace = identifyFileNamespace(rawFileNameAttribute[offsetFileNameSpace])
+	filenameAttribute.FileName, _ = bin.UnicodeBytesToASCII(rawFileNameAttribute[offsetFileName : offsetFileName+int(filenameAttribute.FileNameLength)])
 	return
 }
 

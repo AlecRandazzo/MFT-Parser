@@ -16,21 +16,25 @@ import (
 	"strconv"
 )
 
-type ResidentDataAttribute struct {
-	ResidentData []byte
-}
+type RawDataAttribute []byte
+type RawResidentDataAttribute []byte
+type RawNonResidentDataAttribute []byte
+type RawDataRuns []byte
+type RawDataRunSplitByte byte
+type RawDataRun []byte
+type ResidentDataAttribute []byte
 
 type NonResidentDataAttribute struct {
 	DataRuns DataRuns
 }
 
-type UnparsedDataRun struct {
+type UnresolvedDataRun struct {
 	NumberOrder      int
 	ClusterOffset    int64
 	NumberOfClusters int64
 }
 
-type UnparsedDataRuns map[int]UnparsedDataRun
+type UnresolvedDataRuns map[int]UnresolvedDataRun
 
 type DataRuns map[int]DataRun
 
@@ -45,112 +49,137 @@ type DataRunSplit struct {
 }
 
 type DataAttribute struct {
-	TotalSize                 uint8
-	FlagResident              bool
-	ResidentDataAttributes    ResidentDataAttribute
-	NonResidentDataAttributes NonResidentDataAttribute
+	TotalSize                uint8
+	FlagResident             bool
+	ResidentDataAttribute    ResidentDataAttribute
+	NonResidentDataAttribute NonResidentDataAttribute
 }
 
-func (dataAttribute *DataAttribute) Parse(attribute Attribute, bytesPerCluster int64) (err error) {
-	const offsetResidentFlag = 0x08
+func (rawDataAttribute RawDataAttribute) Parse(bytesPerCluster int64) (nonResidentDataAttribute NonResidentDataAttribute, residentDataAttribute ResidentDataAttribute, err error) {
+	sizeOfRawDataAttribute := len(rawDataAttribute)
+	if sizeOfRawDataAttribute == 0 {
+		err = errors.New("received nil bytes")
+		return
+	}
 
-	if len(attribute.AttributeBytes) < 0x18 {
-		err = errors.New("DataAttribute.Parse() did not receive valid bytes")
+	if bytesPerCluster == 0 {
+		err = errors.New("did not receive a value for bytes per cluster")
 		return
 	}
 
 	//TODO: handle resident data
-	if attribute.AttributeBytes[offsetResidentFlag] == 0x00 {
-		dataAttribute.FlagResident = true
-		_ = dataAttribute.ResidentDataAttributes.Parse(attribute)
+	const offsetResidentFlag = 0x08
+	if rawDataAttribute[offsetResidentFlag] == 0x00 {
+		rawResidentDataAttribute := RawResidentDataAttribute(make([]byte, sizeOfRawDataAttribute))
+		copy(rawResidentDataAttribute, rawDataAttribute)
+		residentDataAttribute, err = rawResidentDataAttribute.Parse()
+		if err != nil {
+			err = fmt.Errorf("failed to parse resident data attribute: %v", err)
+			return
+		}
 		return
 	} else {
-		dataAttribute.FlagResident = false
-		_ = dataAttribute.NonResidentDataAttributes.Parse(attribute, bytesPerCluster)
+		rawNonResidentDataAttribute := RawNonResidentDataAttribute(make([]byte, sizeOfRawDataAttribute))
+		copy(rawNonResidentDataAttribute, rawDataAttribute)
+		nonResidentDataAttribute, err = rawNonResidentDataAttribute.Parse(bytesPerCluster)
+		if err != nil {
+			err = fmt.Errorf("failed to parse non resident data attribute: %v", err)
+			return
+		}
 	}
 
 	return
 }
 
-func (residentDataAttribute *ResidentDataAttribute) Parse(attribute Attribute) (err error) {
-	if len(attribute.AttributeBytes) < 0x18 {
-		err = errors.New("ResidentDataAttribute.Parse() did not receive valid bytes")
+func (rawResidentDataAttribute RawResidentDataAttribute) Parse() (residentDataAttribute ResidentDataAttribute, err error) {
+	const offsetResidentData = 0x18
+	sizeOfRawResidentDataAttribute := len(rawResidentDataAttribute)
+	if sizeOfRawResidentDataAttribute == 0 {
+		err = errors.New("received nil bytes")
+		return
+	} else if sizeOfRawResidentDataAttribute < offsetResidentData {
+		err = fmt.Errorf("expected to receive at least 18 bytes, but received %v", sizeOfRawResidentDataAttribute)
 		return
 	}
 
-	const offsetResidentData = 0x18
-	residentDataAttribute.ResidentData = attribute.AttributeBytes[offsetResidentData:]
+	copy(residentDataAttribute, rawResidentDataAttribute[offsetResidentData:])
 
 	return
 }
 
-func (nonResidentDataAttributes *NonResidentDataAttribute) Parse(attribute Attribute, bytesPerCluster int64) (err error) {
-
-	attributeLength := len(attribute.AttributeBytes)
-	if attributeLength <= 0x20 {
-		err = errors.New("NonResidentDataAttribute.Parse() did not receive valid bytes")
+func (rawNonResidentDataAttribute RawNonResidentDataAttribute) Parse(bytesPerCluster int64) (nonResidentDataAttributes NonResidentDataAttribute, err error) {
+	const offsetDataRunOffset = 0x20
+	sizeOfRawNonResidentDataAttribute := len(rawNonResidentDataAttribute)
+	if sizeOfRawNonResidentDataAttribute == 0 {
+		err = errors.New("received nil bytes")
+		return
+	} else if sizeOfRawNonResidentDataAttribute <= offsetDataRunOffset {
+		err = fmt.Errorf("expected to receive at least 18 bytes, but received %v", sizeOfRawNonResidentDataAttribute)
 		return
 	}
 
 	// Identify offset of the data runs in the data Attribute
-	const offsetDataRunOffset = 0x20
-	dataRunOffset := attribute.AttributeBytes[offsetDataRunOffset]
 
-	if attributeLength < int(dataRunOffset) {
-		err = errors.New("attribute offset longer than length")
+	dataRunOffset := rawNonResidentDataAttribute[offsetDataRunOffset]
+
+	if sizeOfRawNonResidentDataAttribute < int(dataRunOffset) {
+		err = errors.New("data run offset is beyond the size of the byte slice")
 		return
 	}
 
 	// Pull out the data run bytes
-	dataRunsBytes := make([]byte, attributeLength)
-	copy(dataRunsBytes, attribute.AttributeBytes[dataRunOffset:])
+	rawDataRuns := RawDataRuns(make([]byte, sizeOfRawNonResidentDataAttribute))
+	copy(rawDataRuns, rawNonResidentDataAttribute[dataRunOffset:])
 
 	// Send the bytes to be parsed
-	nonResidentDataAttributes.DataRuns = make(map[int]DataRun)
-	_ = nonResidentDataAttributes.DataRuns.Parse(dataRunsBytes, bytesPerCluster)
+	nonResidentDataAttributes.DataRuns, err = rawDataRuns.Parse(bytesPerCluster)
+	if err != nil {
+		err = fmt.Errorf("filed to parse data runs: %v", err)
+		return
+	}
 
 	return
 }
 
-func (dataRuns *DataRuns) Parse(dataRunBytes []byte, bytesPerCluster int64) (err error) {
-	if dataRunBytes == nil {
-		err = errors.New("dataruns.Parse() received null bytes")
-		*dataRuns = nil
+func (rawDataRuns RawDataRuns) Parse(bytesPerCluster int64) (dataRuns DataRuns, err error) {
+	if rawDataRuns == nil {
+		err = errors.New("received null bytes")
 		return
 	}
 
 	// Initialize a few variables
-	UnparsedDataRun := UnparsedDataRun{}
-	UnparsedDataRuns := make(UnparsedDataRuns)
+	UnresolvedDataRun := UnresolvedDataRun{}
+	UnresolvedDataRuns := make(UnresolvedDataRuns)
+	sizeOfRawDataRuns := len(rawDataRuns)
+	dataRuns = make(DataRuns)
 	offset := 0
 	runCounter := 0
 
 	for {
 		// Checks to see if we reached the end of the data runs. If so, break out of the loop.
-		if dataRunBytes[offset] == 0x00 || len(dataRunBytes) < offset {
+		if rawDataRuns[offset] == 0x00 || sizeOfRawDataRuns < offset {
 			break
 		} else {
 			// Take the first byte of a data run and send it to get split so we know how many bytes account for the
 			// data run's offset and how many account for the data run's length.
-			byteToBeSplit := dataRunBytes[offset]
-			dataRunSplit := DataRunSplit{}
-			dataRunSplit.Parse(byteToBeSplit)
+			byteToBeSplit := RawDataRunSplitByte(rawDataRuns[offset])
+			dataRunSplit := byteToBeSplit.Parse()
 			offset += 1
 
 			// Pull out the the bytes that account for the data runs offset2 and length
 			var lengthBytes, offsetBytes []byte
 
-			lengthBytes = make([]byte, len(dataRunBytes[offset:(offset+dataRunSplit.lengthByteCount)]))
-			copy(lengthBytes, dataRunBytes[offset:(offset+dataRunSplit.lengthByteCount)])
-			offsetBytes = make([]byte, len(dataRunBytes[(offset+dataRunSplit.lengthByteCount):(offset+dataRunSplit.lengthByteCount+dataRunSplit.offsetByteCount)]))
-			copy(offsetBytes, dataRunBytes[(offset+dataRunSplit.lengthByteCount):(offset+dataRunSplit.lengthByteCount+dataRunSplit.offsetByteCount)])
+			lengthBytes = make([]byte, len(rawDataRuns[offset:(offset+dataRunSplit.lengthByteCount)]))
+			copy(lengthBytes, rawDataRuns[offset:(offset+dataRunSplit.lengthByteCount)])
+			offsetBytes = make([]byte, len(rawDataRuns[(offset+dataRunSplit.lengthByteCount):(offset+dataRunSplit.lengthByteCount+dataRunSplit.offsetByteCount)]))
+			copy(offsetBytes, rawDataRuns[(offset+dataRunSplit.lengthByteCount):(offset+dataRunSplit.lengthByteCount+dataRunSplit.offsetByteCount)])
 
 			// Convert the bytes for the data run offset and length to little endian int64
-			UnparsedDataRun.ClusterOffset, _ = bin.LittleEndianBinaryToInt64(offsetBytes)
-			UnparsedDataRun.NumberOfClusters, _ = bin.LittleEndianBinaryToInt64(lengthBytes)
+			UnresolvedDataRun.ClusterOffset, _ = bin.LittleEndianBinaryToInt64(offsetBytes)
+			UnresolvedDataRun.NumberOfClusters, _ = bin.LittleEndianBinaryToInt64(lengthBytes)
 
 			// Append the data run to our data run struct
-			UnparsedDataRuns[runCounter] = UnparsedDataRun
+			UnresolvedDataRuns[runCounter] = UnresolvedDataRun
 
 			// Increment the number order in preparation for the next data run.
 			runCounter += 1
@@ -162,23 +191,23 @@ func (dataRuns *DataRuns) Parse(dataRunBytes []byte, bytesPerCluster int64) (err
 
 	// resolve Data Runs
 	dataRunOffset := int64(0)
-	for i := 0; i < len(UnparsedDataRuns); i++ {
-		dataRunOffset = dataRunOffset + (UnparsedDataRuns[i].ClusterOffset * bytesPerCluster)
-		(*dataRuns)[i] = DataRun{
+	for i := 0; i < len(UnresolvedDataRuns); i++ {
+		dataRunOffset = dataRunOffset + (UnresolvedDataRuns[i].ClusterOffset * bytesPerCluster)
+		dataRuns[i] = DataRun{
 			AbsoluteOffset: dataRunOffset,
-			Length:         UnparsedDataRuns[i].NumberOfClusters * bytesPerCluster,
+			Length:         UnresolvedDataRuns[i].NumberOfClusters * bytesPerCluster,
 		}
 	}
 	return
 }
 
-func (dataRunSplit *DataRunSplit) Parse(dataRun byte) {
-	/*
-		This function will split the first byte of a data run.
-		See the following for a good write up on data runs: https://homepage.cs.uri.edu/~thenry/csc487/video/66_NTFS_Data_Runs.pdf
-	*/
+/*
+	This function will split the first byte of a data run.
+	See the following for a good write up on data runs: https://homepage.cs.uri.edu/~thenry/csc487/video/66_NTFS_Data_Runs.pdf
+*/
+func (rawDataRunSplitByte RawDataRunSplitByte) Parse() (dataRunSplit DataRunSplit) {
 	// Convert the byte to a hex string
-	hexToSplit := fmt.Sprintf("%x", dataRun)
+	hexToSplit := fmt.Sprintf("%x", rawDataRunSplitByte)
 
 	if len(hexToSplit) == 1 {
 		dataRunSplit.offsetByteCount = 0

@@ -11,6 +11,7 @@ package GoFor_MFT_Parser
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	ts "github.com/AlecRandazzo/Timestamp-Parser"
 	log "github.com/sirupsen/logrus"
@@ -20,16 +21,13 @@ import (
 )
 
 type MasterFileTableRecord struct {
-	BytesPerCluster               int64
 	RecordHeader                  RecordHeader
-	StandardInformationAttributes StandardInformationAttributes
+	StandardInformationAttributes StandardInformationAttribute
 	FileNameAttributes            []FileNameAttribute
-	DataAttributes                DataAttribute
-	Attributes                    Attributes
-	UseFullMftFields              useFullMftFields
+	DataAttribute                 DataAttribute
 }
 
-type useFullMftFields struct {
+type UseFulMftFields struct {
 	RecordNumber     uint32       `json:"RecordNumber"`
 	FilePath         string       `json:"FilePath"`
 	FullPath         string       `json:"FullPath"`
@@ -53,15 +51,15 @@ type useFullMftFields struct {
 type RawMasterFileTableRecord []byte
 
 // Parse an already extracted MFT and write the results to a file.
-func ParseMFT(reader io.Reader, writer OutputWriters, numberOfWorkers int) (err error) {
+func ParseMFT(reader io.Reader, writer OutputWriters, numberOfWorkers int, bytesPerCluster int64) (err error) {
 
-	var directoryTree DirectoryTree
+	directoryTree := DirectoryTree(make(map[uint64]string))
 	err = directoryTree.Build(reader, numberOfWorkers)
 	if err != nil {
 		return
 	}
 
-	outputChannel := make(chan useFullMftFields, 100)
+	outputChannel := make(chan UseFulMftFields, 100)
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(1)
 
@@ -75,7 +73,7 @@ func ParseMFT(reader io.Reader, writer OutputWriters, numberOfWorkers int) (err 
 			break
 		}
 		rawMftRecord := RawMasterFileTableRecord(buffer)
-		mftRecord, err := rawMftRecord.Parse()
+		mftRecord, err := rawMftRecord.Parse(bytesPerCluster)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"mft_offset":   offset,
@@ -87,8 +85,8 @@ func ParseMFT(reader io.Reader, writer OutputWriters, numberOfWorkers int) (err 
 			continue
 		}
 
-		mftRecord.UseFullMftFields.get(&mftRecord, &directoryTree)
-		outputChannel <- mftRecord.UseFullMftFields
+		usefulMftFields := GetUsefulMftFields(mftRecord, directoryTree)
+		outputChannel <- usefulMftFields
 
 	}
 	close(outputChannel)
@@ -96,77 +94,71 @@ func ParseMFT(reader io.Reader, writer OutputWriters, numberOfWorkers int) (err 
 	return
 }
 
-func (useFullMftFields *useFullMftFields) get(mftRecord *MasterFileTableRecord, directoryTree *DirectoryTree) {
+func GetUsefulMftFields(mftRecord MasterFileTableRecord, directoryTree DirectoryTree) (useFulMftFields UseFulMftFields) {
 	for _, record := range mftRecord.FileNameAttributes {
 		if strings.Contains(record.FileNamespace, "WIN32") || strings.Contains(record.FileNamespace, "POSIX") {
-			if directory, ok := (*directoryTree)[record.ParentDirRecordNumber]; ok {
-				mftRecord.UseFullMftFields.FileName = record.FileName
-				mftRecord.UseFullMftFields.FilePath = directory
-				mftRecord.UseFullMftFields.FullPath = mftRecord.UseFullMftFields.FilePath + mftRecord.UseFullMftFields.FileName
+			if directory, ok := directoryTree[record.ParentDirRecordNumber]; ok {
+				useFulMftFields.FileName = record.FileName
+				useFulMftFields.FilePath = directory
+				useFulMftFields.FullPath = useFulMftFields.FilePath + useFulMftFields.FileName
 			} else {
-				mftRecord.UseFullMftFields.FileName = record.FileName
-				mftRecord.UseFullMftFields.FilePath = "$ORPHANFILE"
-				mftRecord.UseFullMftFields.FullPath = mftRecord.UseFullMftFields.FilePath + mftRecord.UseFullMftFields.FileName
+				useFulMftFields.FileName = record.FileName
+				useFulMftFields.FilePath = "$ORPHANFILE"
+				useFulMftFields.FullPath = useFulMftFields.FilePath + useFulMftFields.FileName
 			}
-			mftRecord.UseFullMftFields.RecordNumber = mftRecord.RecordHeader.RecordNumber
-			mftRecord.UseFullMftFields.SystemFlag = record.FileNameFlags.System
-			mftRecord.UseFullMftFields.HiddenFlag = record.FileNameFlags.Hidden
-			mftRecord.UseFullMftFields.ReadOnlyFlag = record.FileNameFlags.ReadOnly
-			mftRecord.UseFullMftFields.DirectoryFlag = mftRecord.RecordHeader.Flags.FlagDirectory
-			mftRecord.UseFullMftFields.DeletedFlag = mftRecord.RecordHeader.Flags.FlagDeleted
-			mftRecord.UseFullMftFields.FnCreated = record.FnCreated
-			mftRecord.UseFullMftFields.FnModified = record.FnModified
-			mftRecord.UseFullMftFields.FnAccessed = record.FnAccessed
-			mftRecord.UseFullMftFields.FnChanged = record.FnChanged
-			mftRecord.UseFullMftFields.SiCreated = mftRecord.StandardInformationAttributes.SiCreated
-			mftRecord.UseFullMftFields.SiModified = mftRecord.StandardInformationAttributes.SiModified
-			mftRecord.UseFullMftFields.SiAccessed = mftRecord.StandardInformationAttributes.SiAccessed
-			mftRecord.UseFullMftFields.SiChanged = mftRecord.StandardInformationAttributes.SiChanged
-			mftRecord.UseFullMftFields.PhysicalFileSize = record.PhysicalFileSize
+			useFulMftFields.RecordNumber = mftRecord.RecordHeader.RecordNumber
+			useFulMftFields.SystemFlag = record.FileNameFlags.System
+			useFulMftFields.HiddenFlag = record.FileNameFlags.Hidden
+			useFulMftFields.ReadOnlyFlag = record.FileNameFlags.ReadOnly
+			useFulMftFields.DirectoryFlag = mftRecord.RecordHeader.Flags.FlagDirectory
+			useFulMftFields.DeletedFlag = mftRecord.RecordHeader.Flags.FlagDeleted
+			useFulMftFields.FnCreated = record.FnCreated
+			useFulMftFields.FnModified = record.FnModified
+			useFulMftFields.FnAccessed = record.FnAccessed
+			useFulMftFields.FnChanged = record.FnChanged
+			useFulMftFields.SiCreated = mftRecord.StandardInformationAttributes.SiCreated
+			useFulMftFields.SiModified = mftRecord.StandardInformationAttributes.SiModified
+			useFulMftFields.SiAccessed = mftRecord.StandardInformationAttributes.SiAccessed
+			useFulMftFields.SiChanged = mftRecord.StandardInformationAttributes.SiChanged
+			useFulMftFields.PhysicalFileSize = record.PhysicalFileSize
 			break
 		}
 	}
+
+	return
 }
 
 // Parse the bytes of an MFT record
-func (rawMftRecord *RawMasterFileTableRecord) Parse() (mftRecord MasterFileTableRecord, err error) {
-	err = mftRecord.RecordHeader.Parse(*rawMftRecord)
-	if err != nil {
-		err = fmt.Errorf("%w", err)
+func (rawMftRecord RawMasterFileTableRecord) Parse(bytesPerCluster int64) (mftRecord MasterFileTableRecord, err error) {
+	// Sanity checks
+	sizeOfRawMftRecord := len(rawMftRecord)
+	if sizeOfRawMftRecord == 0 {
+		err = errors.New("received nil bytes")
+		return
 	}
 	rawMftRecord.trimSlackSpace()
-	mftRecord.Attributes.Parse(*rawMftRecord, mftRecord.RecordHeader.AttributesOffset)
+
+	rawRecordHeader, err := rawMftRecord.GetRawRecordHeader()
 	if err != nil {
-		err = fmt.Errorf("failed to get Attribute list: %w", err)
+		err = fmt.Errorf("failed to parse MFT record header: %v", err)
 		return
 	}
 
-	const codeFileName = 0x30
-	const codeStandardInformation = 0x10
-	const codeData = 0x80
+	mftRecord.RecordHeader, err = rawRecordHeader.Parse()
+	if err != nil {
+		err = fmt.Errorf("%w", err)
+	}
 
-	for _, attribute := range mftRecord.Attributes {
-		switch attribute.AttributeType {
-		case codeFileName:
-			fileNameAttribute := FileNameAttribute{}
-			err = fileNameAttribute.Parse(attribute)
-			if err != nil {
-				continue
-			}
-			mftRecord.FileNameAttributes = append(mftRecord.FileNameAttributes, fileNameAttribute)
-		case codeStandardInformation:
-			err = mftRecord.StandardInformationAttributes.Parse(attribute)
-			if err != nil {
-				err = fmt.Errorf("failed to get standard info Attribute %w", err)
-				return
-			}
-		case codeData:
-			err = mftRecord.DataAttributes.Parse(attribute, mftRecord.BytesPerCluster)
-			if err != nil {
-				err = fmt.Errorf("failed to get data Attribute %w", err)
-				return
-			}
-		}
+	var rawAttributes RawAttributes
+	rawAttributes, err = rawMftRecord.GetRawAttributes(mftRecord.RecordHeader)
+	if err != nil {
+		err = fmt.Errorf("failed to get raw data attributes: %v", err)
+		return
+	}
+
+	mftRecord.FileNameAttributes, mftRecord.StandardInformationAttributes, mftRecord.DataAttribute, err = rawAttributes.Parse(bytesPerCluster)
+	if err != nil {
+		err = fmt.Errorf("failed to parse raw attributes: %v", err)
 	}
 	return
 }

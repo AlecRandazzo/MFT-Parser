@@ -11,86 +11,94 @@ package GoFor_MFT_Parser
 
 import (
 	"encoding/binary"
+	"errors"
+	"fmt"
 )
 
-type Attributes []Attribute
+type RawAttribute []byte
+type RawAttributes []RawAttribute
 
-type Attribute struct {
-	AttributeType  byte
-	AttributeBytes []byte
-	AttributeSize  uint16
-}
-
-// Parse MFT record attributes list.
-func (attributes *Attributes) Parse(mftRecord RawMasterFileTableRecord, attributesOffset uint16) {
-	const offsetAttributeSize = 0x04
-	const lengthAttributeSize = 0x04
-
-	//const offsetResidentFlag = 0x08
-	//const offsetHeaderNameLength = 0x09
-	//
-	//const offsetAttributeType = 0x18
-	//const lengthAttributeType = 0x04
-	//
-	//const offsetRecordLength = 0x1c
-	//const lengthRecordLength = 0x02
-	//
-	//const offsetNameLength = 0x1e
-	//const offsetNameOffset = 0x1f
-	//
-	//const offsetStartingVCN = 0x20
-	//const lengthStartingVCN = 0x08
-	//
-	//const offsetBaseFileReference = 0x28
-	//const lengthBaseFileReference = 0x08
-	//
-	//const offsetAttributeId = 0x30
-	//const lengthAttributeId = 0x02
-	//
-	//const offsetName = 0x32
-
-	// Init variable that tracks how far to the next Attribute
-	var distanceToNextAttribute uint16 = 0
-
-	for {
-		// Calculate offset to next Attribute
-		attributesOffset = attributesOffset + distanceToNextAttribute
-
-		// Break if the offset is beyond the byte slice
-		lenBytesIn := len(mftRecord)
-		if attributesOffset > uint16(lenBytesIn) || attributesOffset+0x04 > uint16(lenBytesIn) {
-			break
+func (rawAttributes RawAttributes) Parse(bytesPerCluster int64) (fileNameAttributes FileNameAttributes, standardInformationAttribute StandardInformationAttribute, dataAttribute DataAttribute, err error) {
+	const codeFileName = 0x30
+	const codeStandardInformation = 0x10
+	const codeData = 0x80
+	for _, rawAttribute := range rawAttributes {
+		switch rawAttribute[0x00] {
+		case codeFileName:
+			rawFileNameAttribute := RawFileNameAttribute(make([]byte, len(rawAttribute)))
+			copy(rawFileNameAttribute, rawAttribute)
+			fileNameAttribute, err := rawFileNameAttribute.Parse()
+			if err != nil {
+				continue
+			}
+			fileNameAttributes = append(fileNameAttributes, fileNameAttribute)
+		case codeStandardInformation:
+			rawStandardInformationAttribute := RawStandardInformationAttribute(make([]byte, len(rawAttribute)))
+			copy(rawStandardInformationAttribute, rawAttribute)
+			standardInformationAttribute, err = rawStandardInformationAttribute.Parse()
+			if err != nil {
+				err = fmt.Errorf("failed to get standard info Attribute %w", err)
+				return
+			}
+		case codeData:
+			rawDataAttribute := RawDataAttribute(make([]byte, len(rawAttribute)))
+			copy(rawDataAttribute, rawAttribute)
+			dataAttribute.NonResidentDataAttribute, dataAttribute.ResidentDataAttribute, err = rawDataAttribute.Parse(bytesPerCluster)
+			if err != nil {
+				err = fmt.Errorf("failed to get data Attribute %w", err)
+				return
+			}
 		}
-
-		// Verify if the byte slice is actually an MFT Attribute
-		shouldWeContinue := isThisAnAttribute(mftRecord[attributesOffset])
-		if shouldWeContinue == false {
-			break
-		}
-
-		// Pull out information describing the Attribute and the Attribute bytes
-		attribute := Attribute{}
-		attribute.Parse(mftRecord, attributesOffset)
-
-		// Append the Attribute to the Attribute struct
-		*attributes = append(*attributes, attribute)
-
-		// Track the distance to the next Attribute based on the size of the current Attribute
-		distanceToNextAttribute = attribute.AttributeSize
 	}
 	return
 }
 
-func (attribute *Attribute) Parse(mftRecord RawMasterFileTableRecord, attributeOffset uint16) {
+func (rawMftRecord RawMasterFileTableRecord) GetRawAttributes(recordHeader RecordHeader) (rawAttributes RawAttributes, err error) {
+	// Doing some sanity checks
+	if len(rawMftRecord) == 0 {
+		err = errors.New("received nil bytes")
+		return
+	}
+	if recordHeader.AttributesOffset == 0 {
+		err = errors.New("record header argument has an attribute offset value of 0")
+		return
+	}
+
 	const offsetAttributeSize = 0x04
 	const lengthAttributeSize = 0x04
 
-	attribute.AttributeType = mftRecord[attributeOffset]
-	attribute.AttributeSize = binary.LittleEndian.Uint16(mftRecord[attributeOffset+offsetAttributeSize : attributeOffset+offsetAttributeSize+lengthAttributeSize])
-	end := attributeOffset + attribute.AttributeSize
-	attributeLength := len(mftRecord[attributeOffset:end])
-	attribute.AttributeBytes = make([]byte, attributeLength)
-	copy(attribute.AttributeBytes, mftRecord[attributeOffset:end])
+	// Init variable that tracks how far to the next Attribute
+	var distanceToNextAttribute uint16 = 0
+	offset := recordHeader.AttributesOffset
+	sizeOfRawMftRecord := len(rawMftRecord)
+
+	for {
+		// Calculate offset to next Attribute
+		offset = offset + distanceToNextAttribute
+
+		// Break if the offset is beyond the byte slice
+		if offset > uint16(sizeOfRawMftRecord) || offset+0x04 > uint16(sizeOfRawMftRecord) {
+			break
+		}
+
+		// Verify if the byte slice is actually an MFT Attribute
+		shouldWeContinue := isThisAnAttribute(rawMftRecord[offset])
+		if shouldWeContinue == false {
+			break
+		}
+
+		attributeSize := binary.LittleEndian.Uint16(rawMftRecord[offset+offsetAttributeSize : offset+offsetAttributeSize+lengthAttributeSize])
+		end := offset + attributeSize
+
+		rawAttribute := RawAttribute(make([]byte, attributeSize))
+		copy(rawAttribute, rawMftRecord[offset:end])
+
+		// Append the rawAttributes to the RawAttributes struct
+		rawAttributes = append(rawAttributes, rawAttribute)
+
+		// Track the distance to the next Attribute based on the size of the current Attribute
+		distanceToNextAttribute = binary.LittleEndian.Uint16(rawMftRecord[offset+offsetAttributeSize : offset+offsetAttributeSize+lengthAttributeSize])
+	}
 
 	return
 }

@@ -11,6 +11,7 @@ package GoFor_MFT_Parser
 
 import (
 	"errors"
+	"fmt"
 	"io"
 	"strings"
 	"sync"
@@ -63,29 +64,32 @@ func (unresolvedDirectoryList *unresolvedDirectoryList) create(inboundBuffer *ch
 			continue
 		}
 		var mftRecord MasterFileTableRecord
-		err = mftRecord.RecordHeader.Parse(rawMftRecord)
+		rawRecordHeader, err := rawMftRecord.GetRawRecordHeader()
+		if err != nil {
+			err = fmt.Errorf("failed to parse MFT record header: %v", err)
+			return
+		}
+
+		mftRecord.RecordHeader, err = rawRecordHeader.Parse()
 		if err != nil {
 			continue
 		}
 
-		mftRecord.Attributes.Parse(rawMftRecord, mftRecord.RecordHeader.AttributesOffset)
-		for _, attribute := range mftRecord.Attributes {
-			switch attribute.AttributeType {
-			case codeFileName:
-				fileNameAttribute := FileNameAttribute{}
-				err = fileNameAttribute.Parse(attribute)
-				if err != nil {
-					continue
+		rawAttributes, err := rawMftRecord.GetRawAttributes(mftRecord.RecordHeader)
+		if err != nil {
+			err = fmt.Errorf("failed to get raw attributes: %v", err)
+			return
+		}
+		doesntMatter := int64(4096)
+		fileNameAttributes, _, _, err := rawAttributes.Parse(doesntMatter)
+
+		for _, fileNameAttribute := range fileNameAttributes {
+			if strings.Contains(fileNameAttribute.FileNamespace, "WIN32") == true || strings.Contains(fileNameAttribute.FileNamespace, "POSIX") {
+				(*unresolvedDirectoryList)[uint64(mftRecord.RecordHeader.RecordNumber)] = directory{
+					DirectoryName:      fileNameAttribute.FileName,
+					ParentRecordNumber: fileNameAttribute.ParentDirRecordNumber,
 				}
-				if strings.Contains(fileNameAttribute.FileNamespace, "WIN32") == true || strings.Contains(fileNameAttribute.FileNamespace, "POSIX") {
-					(*unresolvedDirectoryList)[uint64(mftRecord.RecordHeader.RecordNumber)] = directory{
-						DirectoryName:      fileNameAttribute.FileName,
-						ParentRecordNumber: fileNameAttribute.ParentDirRecordNumber,
-					}
-					break
-				}
-			default:
-				continue
+				break
 			}
 		}
 

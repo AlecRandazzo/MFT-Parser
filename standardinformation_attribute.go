@@ -10,13 +10,13 @@
 package GoFor_MFT_Parser
 
 import (
-	"encoding/hex"
 	"errors"
-	"fmt"
 	ts "github.com/AlecRandazzo/Timestamp-Parser"
 )
 
-type StandardInformationAttributes struct {
+type RawStandardInformationAttribute []byte
+
+type StandardInformationAttribute struct {
 	SiCreated    ts.TimeStamp
 	SiModified   ts.TimeStamp
 	SiAccessed   ts.TimeStamp
@@ -24,7 +24,7 @@ type StandardInformationAttributes struct {
 	FlagResident FlagResidency
 }
 
-func (standardInfo *StandardInformationAttributes) Parse(attribute Attribute) (err error) {
+func (rawStandardInformationAttribute RawStandardInformationAttribute) Parse() (standardInformationAttribute StandardInformationAttribute, err error) {
 	const offsetResidentFlag = 0x08
 
 	const offsetSiCreated = 0x18
@@ -40,21 +40,21 @@ func (standardInfo *StandardInformationAttributes) Parse(attribute Attribute) (e
 	const lengthSiAccessed = 0x08
 
 	// The standard information Attribute has a minimum length of 0x30
-	if len(attribute.AttributeBytes) < 0x30 {
+	if len(rawStandardInformationAttribute) < 0x30 {
 		err = errors.New("StandardInformationAttributes.Parse() received invalid bytes")
 		return
 	}
 	// Check to see if the standard information Attribute is resident to the MFT or not
-	standardInfo.FlagResident.Parse(attribute.AttributeBytes[offsetResidentFlag])
-	if standardInfo.FlagResident == false {
-		err = fmt.Errorf("non resident standard information flag found, hex dump: %s", hex.EncodeToString(attribute.AttributeBytes))
+	standardInformationAttribute.FlagResident.Parse(rawStandardInformationAttribute[offsetResidentFlag])
+	if standardInformationAttribute.FlagResident == false {
+		err = errors.New("non resident standard information flag found")
 		return
 	}
 
 	// Parse timestamps
-	_ = standardInfo.SiCreated.Parse(attribute.AttributeBytes[offsetSiCreated : offsetSiCreated+lengthSiCreated])
-	_ = standardInfo.SiModified.Parse(attribute.AttributeBytes[offsetSiModified : offsetSiModified+lengthSiModified])
-	_ = standardInfo.SiChanged.Parse(attribute.AttributeBytes[offsetSiChanged : offsetSiChanged+lengthSiChanged])
-	_ = standardInfo.SiAccessed.Parse(attribute.AttributeBytes[offsetSiAccessed : offsetSiAccessed+lengthSiAccessed])
+	_ = standardInformationAttribute.SiCreated.Parse(rawStandardInformationAttribute[offsetSiCreated : offsetSiCreated+lengthSiCreated])
+	_ = standardInformationAttribute.SiModified.Parse(rawStandardInformationAttribute[offsetSiModified : offsetSiModified+lengthSiModified])
+	_ = standardInformationAttribute.SiChanged.Parse(rawStandardInformationAttribute[offsetSiChanged : offsetSiChanged+lengthSiChanged])
+	_ = standardInformationAttribute.SiAccessed.Parse(rawStandardInformationAttribute[offsetSiAccessed : offsetSiAccessed+lengthSiAccessed])
 	return
 }

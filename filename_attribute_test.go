@@ -8,24 +8,17 @@ import (
 )
 
 func TestFileNameAttribute_Parse(t *testing.T) {
-	type args struct {
-		attribute Attribute
-	}
 	tests := []struct {
-		name    string
-		got     FileNameAttribute
-		args    args
-		want    FileNameAttribute
-		wantErr bool
+		name                 string
+		rawFileNameAttribute RawFileNameAttribute
+		got                  FileNameAttribute
+		want                 FileNameAttribute
+		wantErr              bool
 	}{
 		{
-			name:    "TestFileNameAttribute_Parse test 1",
-			wantErr: false,
-			args: args{attribute: Attribute{
-				AttributeType:  0x30,
-				AttributeBytes: []byte{48, 0, 0, 0, 104, 0, 0, 0, 0, 0, 24, 0, 0, 0, 3, 0, 74, 0, 0, 0, 24, 0, 1, 0, 5, 0, 0, 0, 0, 0, 5, 0, 234, 36, 205, 74, 116, 212, 209, 1, 234, 36, 205, 74, 116, 212, 209, 1, 234, 36, 205, 74, 116, 212, 209, 1, 234, 36, 205, 74, 116, 212, 209, 1, 0, 64, 0, 0, 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 4, 3, 36, 0, 77, 0, 70, 0, 84, 0, 0, 0, 0, 0, 0, 0},
-				AttributeSize:  120,
-			}},
+			name:                 "TestFileNameAttribute_Parse test 1",
+			wantErr:              false,
+			rawFileNameAttribute: RawFileNameAttribute([]byte{48, 0, 0, 0, 104, 0, 0, 0, 0, 0, 24, 0, 0, 0, 3, 0, 74, 0, 0, 0, 24, 0, 1, 0, 5, 0, 0, 0, 0, 0, 5, 0, 234, 36, 205, 74, 116, 212, 209, 1, 234, 36, 205, 74, 116, 212, 209, 1, 234, 36, 205, 74, 116, 212, 209, 1, 234, 36, 205, 74, 116, 212, 209, 1, 0, 64, 0, 0, 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 4, 3, 36, 0, 77, 0, 70, 0, 84, 0, 0, 0, 0, 0, 0, 0}),
 			want: FileNameAttribute{
 				FnCreated:    ts.TimeStamp(time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC)),
 				FnModified:   ts.TimeStamp(time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC)),
@@ -64,28 +57,21 @@ func TestFileNameAttribute_Parse(t *testing.T) {
 			},
 		},
 		{
-			name:    "null bytes in",
-			wantErr: true,
-			args: args{attribute: Attribute{
-				AttributeType:  0x30,
-				AttributeBytes: nil,
-				AttributeSize:  120,
-			}},
+			name:                 "null bytes in",
+			wantErr:              true,
+			rawFileNameAttribute: nil,
 		},
 		{
-			name:    "non-resident",
-			wantErr: true,
-			args: args{attribute: Attribute{
-				AttributeType:  0x30,
-				AttributeBytes: []byte{48, 0, 0, 0, 104, 0, 0, 1, 1, 0, 24, 0, 0, 0, 3, 0, 74, 0, 0, 0, 24, 0, 1, 0, 5, 0, 0, 0, 0, 0, 5, 0, 234, 36, 205, 74, 116, 212, 209, 1, 234, 36, 205, 74, 116, 212, 209, 1, 234, 36, 205, 74, 116, 212, 209, 1, 234, 36, 205, 74, 116, 212, 209, 1, 0, 64, 0, 0, 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 4, 3, 36, 0, 77, 0, 70, 0, 84, 0, 0, 0, 0, 0, 0, 0},
-				AttributeSize:  120,
-			}},
-			want: FileNameAttribute{},
+			name:                 "non-resident",
+			wantErr:              true,
+			rawFileNameAttribute: RawFileNameAttribute([]byte{48, 0, 0, 0, 104, 0, 0, 1, 1, 0, 24, 0, 0, 0, 3, 0, 74, 0, 0, 0, 24, 0, 1, 0, 5, 0, 0, 0, 0, 0, 5, 0, 234, 36, 205, 74, 116, 212, 209, 1, 234, 36, 205, 74, 116, 212, 209, 1, 234, 36, 205, 74, 116, 212, 209, 1, 234, 36, 205, 74, 116, 212, 209, 1, 0, 64, 0, 0, 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 4, 3, 36, 0, 77, 0, 70, 0, 84, 0, 0, 0, 0, 0, 0, 0}),
+			want:                 FileNameAttribute{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := tt.got.Parse(tt.args.attribute)
+			var err error
+			tt.got, err = tt.rawFileNameAttribute.Parse()
 			if !reflect.DeepEqual(tt.got, tt.want) || (err != nil) != tt.wantErr {
 				t.Errorf("Test %v failed \ngot = %v, \nwant = %v", tt.name, tt.got, tt.want)
 			}

@@ -13,9 +13,9 @@ func TestStandardInformationAttributes_Parse(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		got     StandardInformationAttributes
+		got     StandardInformationAttribute
 		args    args
-		want    StandardInformationAttributes
+		want    StandardInformationAttribute
 		wantErr bool
 	}{
 		{
@@ -26,7 +26,7 @@ func TestStandardInformationAttributes_Parse(t *testing.T) {
 				AttributeBytes: []byte{16, 0, 0, 0, 96, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 72, 0, 0, 0, 24, 0, 0, 0, 49, 147, 66, 169, 237, 209, 211, 1, 49, 147, 66, 169, 237, 209, 211, 1, 44, 238, 221, 229, 226, 245, 211, 1, 49, 147, 66, 169, 237, 209, 211, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 253, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 168, 220, 169, 88, 0, 0, 0, 0},
 				AttributeSize:  0,
 			}},
-			want: StandardInformationAttributes{
+			want: StandardInformationAttribute{
 				SiCreated:    ts.TimeStamp(time.Date(2018, 4, 11, 23, 34, 40, 104324900, time.UTC)),
 				SiModified:   ts.TimeStamp(time.Date(2018, 4, 11, 23, 34, 40, 104324900, time.UTC)),
 				SiAccessed:   ts.TimeStamp(time.Date(2018, 4, 11, 23, 34, 40, 104324900, time.UTC)),
