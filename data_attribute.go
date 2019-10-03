@@ -56,9 +56,13 @@ type DataAttribute struct {
 }
 
 func (rawDataAttribute RawDataAttribute) Parse(bytesPerCluster int64) (nonResidentDataAttribute NonResidentDataAttribute, residentDataAttribute ResidentDataAttribute, err error) {
+	const offsetResidentFlag = 0x08
 	sizeOfRawDataAttribute := len(rawDataAttribute)
 	if sizeOfRawDataAttribute == 0 {
 		err = errors.New("received nil bytes")
+		return
+	} else if sizeOfRawDataAttribute <= offsetResidentFlag {
+		err = errors.New("received bytes less than 8")
 		return
 	}
 
@@ -68,7 +72,7 @@ func (rawDataAttribute RawDataAttribute) Parse(bytesPerCluster int64) (nonReside
 	}
 
 	//TODO: handle resident data
-	const offsetResidentFlag = 0x08
+
 	if rawDataAttribute[offsetResidentFlag] == 0x00 {
 		rawResidentDataAttribute := RawResidentDataAttribute(make([]byte, sizeOfRawDataAttribute))
 		copy(rawResidentDataAttribute, rawDataAttribute)
@@ -101,9 +105,9 @@ func (rawResidentDataAttribute RawResidentDataAttribute) Parse() (residentDataAt
 		err = fmt.Errorf("expected to receive at least 18 bytes, but received %v", sizeOfRawResidentDataAttribute)
 		return
 	}
-
+	sizeOfResidentDataAttribute := len(rawResidentDataAttribute[offsetResidentData:])
+	residentDataAttribute = make(ResidentDataAttribute, sizeOfResidentDataAttribute)
 	copy(residentDataAttribute, rawResidentDataAttribute[offsetResidentData:])
-
 	return
 }
 
@@ -132,11 +136,7 @@ func (rawNonResidentDataAttribute RawNonResidentDataAttribute) Parse(bytesPerClu
 	copy(rawDataRuns, rawNonResidentDataAttribute[dataRunOffset:])
 
 	// Send the bytes to be parsed
-	nonResidentDataAttributes.DataRuns, err = rawDataRuns.Parse(bytesPerCluster)
-	if err != nil {
-		err = fmt.Errorf("filed to parse data runs: %v", err)
-		return
-	}
+	nonResidentDataAttributes.DataRuns, _ = rawDataRuns.Parse(bytesPerCluster)
 
 	return
 }
