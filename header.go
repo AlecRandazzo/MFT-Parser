@@ -105,6 +105,8 @@ func (rawMftRecord RawMasterFileTableRecord) GetRawRecordHeader() (rawRecordHead
 		err = fmt.Errorf("expected at least 38 bytes, instead received %v", sizeOfRawMftRecord)
 		return
 	}
+	sizeOfRawRecordHeader := len(rawMftRecord[0:0x38])
+	rawRecordHeader = make(RawRecordHeader, sizeOfRawRecordHeader)
 	copy(rawRecordHeader, rawMftRecord[0:0x38])
 	return
 }
