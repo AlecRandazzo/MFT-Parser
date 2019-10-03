@@ -19,17 +19,40 @@ type RawAttribute []byte
 type RawAttributes []RawAttribute
 
 func (rawAttributes RawAttributes) Parse(bytesPerCluster int64) (fileNameAttributes FileNameAttributes, standardInformationAttribute StandardInformationAttribute, dataAttribute DataAttribute, err error) {
+	sizeOfRawAttributesSlice := len(rawAttributes)
+	if sizeOfRawAttributesSlice == 0 {
+		err = errors.New("nil sized rawAttributes slice")
+		return
+	} else if bytesPerCluster == 0 {
+		err = errors.New("received bytesPerCluster value of 0")
+		return
+	}
+
 	const codeFileName = 0x30
 	const codeStandardInformation = 0x10
 	const codeData = 0x80
 	for _, rawAttribute := range rawAttributes {
+		sizeOfRawAttribute := len(rawAttribute)
+		if sizeOfRawAttribute == 0 {
+			err = errors.New("came across a rawAttribute with a nil size")
+			fileNameAttributes = nil
+			standardInformationAttribute = StandardInformationAttribute{}
+			dataAttribute = DataAttribute{}
+			return
+		}
+
 		switch rawAttribute[0x00] {
 		case codeFileName:
 			rawFileNameAttribute := RawFileNameAttribute(make([]byte, len(rawAttribute)))
 			copy(rawFileNameAttribute, rawAttribute)
-			fileNameAttribute, err := rawFileNameAttribute.Parse()
+			var fileNameAttribute FileNameAttribute
+			fileNameAttribute, err = rawFileNameAttribute.Parse()
 			if err != nil {
-				continue
+				err = fmt.Errorf("failed to get filename Attribute %w", err)
+				fileNameAttributes = nil
+				standardInformationAttribute = StandardInformationAttribute{}
+				dataAttribute = DataAttribute{}
+				return
 			}
 			fileNameAttributes = append(fileNameAttributes, fileNameAttribute)
 		case codeStandardInformation:
@@ -38,6 +61,9 @@ func (rawAttributes RawAttributes) Parse(bytesPerCluster int64) (fileNameAttribu
 			standardInformationAttribute, err = rawStandardInformationAttribute.Parse()
 			if err != nil {
 				err = fmt.Errorf("failed to get standard info Attribute %w", err)
+				fileNameAttributes = nil
+				standardInformationAttribute = StandardInformationAttribute{}
+				dataAttribute = DataAttribute{}
 				return
 			}
 		case codeData:
@@ -46,6 +72,9 @@ func (rawAttributes RawAttributes) Parse(bytesPerCluster int64) (fileNameAttribu
 			dataAttribute.NonResidentDataAttribute, dataAttribute.ResidentDataAttribute, err = rawDataAttribute.Parse(bytesPerCluster)
 			if err != nil {
 				err = fmt.Errorf("failed to get data Attribute %w", err)
+				fileNameAttributes = nil
+				standardInformationAttribute = StandardInformationAttribute{}
+				dataAttribute = DataAttribute{}
 				return
 			}
 		}
