@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func TestFileNameAttribute_Parse(t *testing.T) {
+func TestRawFileNameAttribute_Parse(t *testing.T) {
 	tests := []struct {
 		name                 string
 		rawFileNameAttribute RawFileNameAttribute

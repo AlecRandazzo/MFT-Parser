@@ -106,12 +106,12 @@ func (rawFileNameAttribute RawFileNameAttribute) Parse() (filenameAttribute File
 		err = errors.New("FileNameAttribute.Parse() did not receive valid bytes")
 		return
 	}
-	filenameAttribute.AttributeSize, _ = bin.LittleEndianBinaryToUInt32(rawFileNameAttribute[offsetAttributeSize : offsetAttributeSize+lengthAttributeSize])
 	filenameAttribute.FlagResident.Parse(rawFileNameAttribute[offsetResidentFlag])
 	if filenameAttribute.FlagResident == false {
 		err = errors.New("parseFileNameAttribute(): non-resident filename Attribute encountered")
 		return
 	}
+	filenameAttribute.AttributeSize, _ = bin.LittleEndianBinaryToUInt32(rawFileNameAttribute[offsetAttributeSize : offsetAttributeSize+lengthAttributeSize])
 
 	filenameAttribute.ParentDirRecordNumber, _ = bin.LittleEndianBinaryToUInt64(rawFileNameAttribute[offsetParentRecordNumber : offsetParentRecordNumber+lengthParentRecordNumber])
 	filenameAttribute.ParentDirSequenceNumber, _ = bin.LittleEndianBinaryToUInt16(rawFileNameAttribute[offsetParentDirSequenceNumber : offsetParentDirSequenceNumber+lengthParentDirSequenceNumber])
