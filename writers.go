@@ -24,12 +24,12 @@ type OutputWriters interface {
 }
 
 type CsvWriter struct {
-	OutFile io.Writer
+	OutStream io.Writer
 }
 
 func (writer CsvWriter) Write(outputChannel *chan UseFulMftFields, waitGroup *sync.WaitGroup) (err error) {
 
-	csvWriter := csv.NewWriter(writer.OutFile)
+	csvWriter := csv.NewWriter(writer.OutStream)
 	csvWriter.Comma = '|'
 	csvHeader := []string{
 		"Record Number",

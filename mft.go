@@ -27,16 +27,17 @@ type MasterFileTableRecord struct {
 	DataAttribute                 DataAttribute
 }
 
+//TODO fill out these tags for json, csv, bson, and protobuf
 type UseFulMftFields struct {
-	RecordNumber     uint32       `json:"RecordNumber"`
-	FilePath         string       `json:"FilePath"`
-	FullPath         string       `json:"FullPath"`
-	FileName         string       `json:"FileName"`
-	SystemFlag       bool         `json:"SystemFlag"`
-	HiddenFlag       bool         `json:"HiddenFlag"`
-	ReadOnlyFlag     bool         `json:"ReadOnlyFlag"`
-	DirectoryFlag    bool         `json:"DirectoryFlag"`
-	DeletedFlag      bool         `json:"DeletedFlag"`
+	RecordNumber     uint32       `json:"RecordNumber,number"`
+	FilePath         string       `json:"FilePath,string"`
+	FullPath         string       `json:"FullPath,string"`
+	FileName         string       `json:"FileName,string"`
+	SystemFlag       bool         `json:"SystemFlag,bool"`
+	HiddenFlag       bool         `json:"HiddenFlag,bool"`
+	ReadOnlyFlag     bool         `json:"ReadOnlyFlag,bool"`
+	DirectoryFlag    bool         `json:"DirectoryFlag,bool"`
+	DeletedFlag      bool         `json:"DeletedFlag,bool"`
 	FnCreated        ts.TimeStamp `json:"FnCreated"`
 	FnModified       ts.TimeStamp `json:"FnModified"`
 	FnAccessed       ts.TimeStamp `json:"FnAccessed"`
@@ -45,19 +46,16 @@ type UseFulMftFields struct {
 	SiModified       ts.TimeStamp `json:"SiModified"`
 	SiAccessed       ts.TimeStamp `json:"SiAccessed"`
 	SiChanged        ts.TimeStamp `json:"SiChanged"`
-	PhysicalFileSize uint64       `json:"PhysicalFileSize"`
+	PhysicalFileSize uint64       `json:"PhysicalFileSize,number"`
 }
 
 type RawMasterFileTableRecord []byte
 
 // Parse an already extracted MFT and write the results to a file.
-func ParseMFT(reader io.Reader, writer OutputWriters, numberOfWorkers int, bytesPerCluster int64) (err error) {
-
-	directoryTree := DirectoryTree(make(map[uint64]string))
-	err = directoryTree.Build(reader, numberOfWorkers)
-	if err != nil {
-		return
-	}
+func ParseMFT(reader io.Reader, writer OutputWriters, bytesPerCluster int64) (err error) {
+	var buffer bytes.Buffer
+	tee := io.TeeReader(reader, &buffer)
+	directoryTree, _ := BuildDirectoryTree(tee)
 
 	outputChannel := make(chan UseFulMftFields, 100)
 	var waitGroup sync.WaitGroup
@@ -65,12 +63,13 @@ func ParseMFT(reader io.Reader, writer OutputWriters, numberOfWorkers int, bytes
 
 	go writer.Write(&outputChannel, &waitGroup)
 
-	for {
+	timeToBreak := false
+	for timeToBreak == false {
 		buffer := make([]byte, 1024)
 		offset, err := reader.Read(buffer)
 		if err == io.EOF {
 			err = nil
-			break
+			timeToBreak = true
 		}
 		rawMftRecord := RawMasterFileTableRecord(buffer)
 		mftRecord, err := rawMftRecord.Parse(bytesPerCluster)
@@ -103,7 +102,7 @@ func GetUsefulMftFields(mftRecord MasterFileTableRecord, directoryTree Directory
 				useFulMftFields.FullPath = useFulMftFields.FilePath + useFulMftFields.FileName
 			} else {
 				useFulMftFields.FileName = record.FileName
-				useFulMftFields.FilePath = "$ORPHANFILE"
+				useFulMftFields.FilePath = "$ORPHANFILE\\"
 				useFulMftFields.FullPath = useFulMftFields.FilePath + useFulMftFields.FileName
 			}
 			useFulMftFields.RecordNumber = mftRecord.RecordHeader.RecordNumber
@@ -136,6 +135,20 @@ func (rawMftRecord RawMasterFileTableRecord) Parse(bytesPerCluster int64) (mftRe
 		err = errors.New("received nil bytes")
 		return
 	}
+	if bytesPerCluster == 0 {
+		err = errors.New("bytes per cluster of 0, typically this value is 4096")
+		return
+	}
+	result, err := rawMftRecord.IsThisAnMftRecord()
+	if err != nil {
+		err = fmt.Errorf("failed to parse the raw mft record: %v", err)
+		return
+	}
+	if result == false {
+		err = fmt.Errorf("failed to parse the raw mft record: %v", err)
+		return
+	}
+
 	rawMftRecord.trimSlackSpace()
 
 	rawRecordHeader, err := rawMftRecord.GetRawRecordHeader()
@@ -144,10 +157,7 @@ func (rawMftRecord RawMasterFileTableRecord) Parse(bytesPerCluster int64) (mftRe
 		return
 	}
 
-	mftRecord.RecordHeader, err = rawRecordHeader.Parse()
-	if err != nil {
-		err = fmt.Errorf("%w", err)
-	}
+	mftRecord.RecordHeader, _ = rawRecordHeader.Parse()
 
 	var rawAttributes RawAttributes
 	rawAttributes, err = rawMftRecord.GetRawAttributes(mftRecord.RecordHeader)
@@ -156,10 +166,7 @@ func (rawMftRecord RawMasterFileTableRecord) Parse(bytesPerCluster int64) (mftRe
 		return
 	}
 
-	mftRecord.FileNameAttributes, mftRecord.StandardInformationAttributes, mftRecord.DataAttribute, err = rawAttributes.Parse(bytesPerCluster)
-	if err != nil {
-		err = fmt.Errorf("failed to parse raw attributes: %v", err)
-	}
+	mftRecord.FileNameAttributes, mftRecord.StandardInformationAttributes, mftRecord.DataAttribute, _ = rawAttributes.Parse(bytesPerCluster)
 	return
 }
 
