@@ -41,14 +41,6 @@ func (rawRecordHeader RawRecordHeader) Parse() (recordHeader RecordHeader, err e
 		return
 	}
 
-	const offsetRecordMagicNumber = 0x00
-	const lengthRecordMagicNumber = 0x05
-	magicNumber := string(rawRecordHeader[offsetRecordMagicNumber : offsetRecordMagicNumber+lengthRecordMagicNumber])
-	if magicNumber != "FILE0" {
-		err = errors.New("mftrecord missing magic number FILE0")
-		return
-	}
-
 	const offsetAttributesOffset = 0x14
 	const offsetRecordNumber = 0x2C
 	const lengthRecordNumber = 0x04
@@ -105,8 +97,43 @@ func (rawMftRecord RawMasterFileTableRecord) GetRawRecordHeader() (rawRecordHead
 		err = fmt.Errorf("expected at least 38 bytes, instead received %v", sizeOfRawMftRecord)
 		return
 	}
+
+	result, err := rawMftRecord.IsThisAnMftRecord()
+	if err != nil {
+		err = fmt.Errorf("this is not an mft record: %v", err)
+		return
+	} else if result == false {
+		err = errors.New("this is not an mft record")
+		return
+	}
+
 	sizeOfRawRecordHeader := len(rawMftRecord[0:0x38])
 	rawRecordHeader = make(RawRecordHeader, sizeOfRawRecordHeader)
 	copy(rawRecordHeader, rawMftRecord[0:0x38])
+	return
+}
+
+func (rawMftRecord RawMasterFileTableRecord) IsThisAnMftRecord() (result bool, err error) {
+	sizeOfRawMftRecord := len(rawMftRecord)
+
+	if sizeOfRawMftRecord == 0 {
+		err = errors.New("received nil bytes")
+		result = false
+		return
+	}
+	if sizeOfRawMftRecord < 0x05 {
+		err = errors.New("received less than 4 bytes")
+		result = false
+		return
+	}
+
+	const offsetRecordMagicNumber = 0x00
+	const lengthRecordMagicNumber = 0x05
+	magicNumber := string(rawMftRecord[offsetRecordMagicNumber : offsetRecordMagicNumber+lengthRecordMagicNumber])
+	if magicNumber != "FILE0" {
+		result = false
+		return
+	}
+	result = true
 	return
 }
