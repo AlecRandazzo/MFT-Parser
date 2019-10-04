@@ -27,21 +27,22 @@ type UnresolvedDirectoryTree map[uint64]directory
 type DirectoryTree map[uint64]string
 
 // Quickly checks the bytes of an MFT record to determine if it is a directory or not.
-func (rawMftRecord *RawMasterFileTableRecord) IsThisADirectory() (result bool, err error) {
+func (rawMftRecord RawMasterFileTableRecord) IsThisADirectory() (result bool, err error) {
 
 	const offsetRecordFlag = 0x16
 	const codeDirectory = 0x03
-	if len(*rawMftRecord) == 0 {
+	sizeOfRawMFTRecord := len(rawMftRecord)
+	if sizeOfRawMFTRecord == 0 {
 		result = false
 		err = errors.New("RawMasterFileTableRecord.Parse() received nil bytes ")
 		return
 	}
-	if len(*rawMftRecord) <= offsetRecordFlag {
+	if sizeOfRawMFTRecord <= offsetRecordFlag {
 		result = false
 		err = errors.New("RawMasterFileTableRecord.Parse() received not enough bytes ")
 		return
 	}
-	recordFlag := []byte(*rawMftRecord)[offsetRecordFlag]
+	recordFlag := rawMftRecord[offsetRecordFlag]
 	if recordFlag == codeDirectory {
 		result = true
 	} else {
@@ -61,12 +62,7 @@ func convertRawMFTRecordToDirectory(rawMftRecord RawMasterFileTableRecord) (dire
 		err = fmt.Errorf("failed to parse get record header: %v", err)
 		return
 	}
-
-	recordHeader, err := rawRecordHeader.Parse()
-	if err != nil {
-		err = fmt.Errorf("failed to parse record header: %v", err)
-		return
-	}
+	recordHeader, _ := rawRecordHeader.Parse()
 
 	rawAttributes, err := rawMftRecord.GetRawAttributes(recordHeader)
 	if err != nil {
@@ -93,9 +89,6 @@ func BuildUnresolvedDirectoryTree(reader io.Reader) (unresolvedDirectoryTree Unr
 		_, err = reader.Read(buffer)
 		if err == io.EOF {
 			err = nil
-			break
-		} else if err != nil {
-			err = fmt.Errorf("failed to build unresolved directory tree: %v", err)
 			break
 		}
 
@@ -141,10 +134,7 @@ func (unresolvedDirectoryTree UnresolvedDirectoryTree) resolve() (directoryTree 
 // Builds a list of directories for the purpose of of mapping MFT records to their parent directories.
 func BuildDirectoryTree(reader io.Reader) (directoryTree DirectoryTree, err error) {
 	directoryTree = make(DirectoryTree)
-	unresolvedDirectoryTree, err := BuildUnresolvedDirectoryTree(reader)
-	if err != nil {
-		err = fmt.Errorf("failed to build directory tree: %v", err)
-	}
+	unresolvedDirectoryTree, _ := BuildUnresolvedDirectoryTree(reader)
 	directoryTree = unresolvedDirectoryTree.resolve()
 	return
 }
