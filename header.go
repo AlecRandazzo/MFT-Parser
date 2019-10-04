@@ -98,11 +98,8 @@ func (rawMftRecord RawMasterFileTableRecord) GetRawRecordHeader() (rawRecordHead
 		return
 	}
 
-	result, err := rawMftRecord.IsThisAnMftRecord()
-	if err != nil {
-		err = fmt.Errorf("this is not an mft record: %v", err)
-		return
-	} else if result == false {
+	result, _ := rawMftRecord.IsThisAnMftRecord()
+	if result == false {
 		err = errors.New("this is not an mft record")
 		return
 	}
