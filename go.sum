@@ -1,7 +1,7 @@
 github.com/AlecRandazzo/BinaryTransforms v1.2.0 h1:HPc49zFQ+25DpbeI6EGTPAVb+YrcltEGUCqKHtBxETw=
 github.com/AlecRandazzo/BinaryTransforms v1.2.0/go.mod h1:j5jUHxbnBatH1AQsl3ISFaXdCKBtIIGAbtanaLHcnr0=
-github.com/AlecRandazzo/Timestamp-Parser v1.2.1 h1:sltY+h8UZwolhdkcsuqPxl8JV3vBM2T4ZWZrVZNvMD0=
-github.com/AlecRandazzo/Timestamp-Parser v1.2.1/go.mod h1:WdpJVLazKVMAZG0qxevWJUjcWCBZrW+g+vs+mKooXrk=
+github.com/AlecRandazzo/Timestamp-Parser v1.3.0 h1:QN+6F2w3/KubIjkMvie4VRYvVjzgm2EeJum1RZGf1TU=
+github.com/AlecRandazzo/Timestamp-Parser v1.3.0/go.mod h1:WdpJVLazKVMAZG0qxevWJUjcWCBZrW+g+vs+mKooXrk=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/google/go-cmp v0.3.1 h1:Xye71clBPdm5HgqGwUkwhbynsUJZhDbS20FvLhQ2izg=

@@ -14,6 +14,7 @@ import (
 	"errors"
 	bin "github.com/AlecRandazzo/BinaryTransforms"
 	ts "github.com/AlecRandazzo/Timestamp-Parser"
+	"time"
 )
 
 type FileNameAttributes []FileNameAttribute
@@ -21,10 +22,10 @@ type FileNameAttributes []FileNameAttribute
 type FlagResidency bool
 
 type FileNameAttribute struct {
-	FnCreated               ts.TimeStamp
-	FnModified              ts.TimeStamp
-	FnAccessed              ts.TimeStamp
-	FnChanged               ts.TimeStamp
+	FnCreated               time.Time
+	FnModified              time.Time
+	FnAccessed              time.Time
+	FnChanged               time.Time
 	FlagResident            FlagResidency
 	NameLength              NameLength
 	AttributeSize           uint32
@@ -115,10 +116,16 @@ func (rawFileNameAttribute RawFileNameAttribute) Parse() (filenameAttribute File
 
 	filenameAttribute.ParentDirRecordNumber, _ = bin.LittleEndianBinaryToUInt64(rawFileNameAttribute[offsetParentRecordNumber : offsetParentRecordNumber+lengthParentRecordNumber])
 	filenameAttribute.ParentDirSequenceNumber, _ = bin.LittleEndianBinaryToUInt16(rawFileNameAttribute[offsetParentDirSequenceNumber : offsetParentDirSequenceNumber+lengthParentDirSequenceNumber])
-	_ = filenameAttribute.FnCreated.Parse(rawFileNameAttribute[offsetFnCreated : offsetFnCreated+lengthFnCreated])
-	_ = filenameAttribute.FnModified.Parse(rawFileNameAttribute[offsetFnModified : offsetFnModified+lengthFnModified])
-	_ = filenameAttribute.FnChanged.Parse(rawFileNameAttribute[offsetFnChanged : offsetFnChanged+lengthFnChanged])
-	_ = filenameAttribute.FnAccessed.Parse(rawFileNameAttribute[offsetFnAccessed : offsetFnAccessed+lengthFnAccessed])
+
+	rawFnCreated := ts.RawTimestamp(rawFileNameAttribute[offsetFnCreated : offsetFnCreated+lengthFnCreated])
+	rawFnModified := ts.RawTimestamp(rawFileNameAttribute[offsetFnModified : offsetFnModified+lengthFnModified])
+	rawFnChanged := ts.RawTimestamp(rawFileNameAttribute[offsetFnChanged : offsetFnChanged+lengthFnChanged])
+	rawFnAccessed := ts.RawTimestamp(rawFileNameAttribute[offsetFnAccessed : offsetFnAccessed+lengthFnAccessed])
+
+	filenameAttribute.FnCreated, _ = rawFnCreated.Parse()
+	filenameAttribute.FnModified, _ = rawFnModified.Parse()
+	filenameAttribute.FnChanged, _ = rawFnChanged.Parse()
+	filenameAttribute.FnAccessed, _ = rawFnAccessed.Parse()
 	filenameAttribute.LogicalFileSize, _ = bin.LittleEndianBinaryToUInt64(rawFileNameAttribute[offsetLogicalFileSize : offsetLogicalFileSize+lengthLogicalFileSize])
 	filenameAttribute.PhysicalFileSize, _ = bin.LittleEndianBinaryToUInt64(rawFileNameAttribute[offSetPhysicalFileSize : offSetPhysicalFileSize+lengthPhysicalFileSize])
 	filenameAttribute.FileNameFlags.Parse(rawFileNameAttribute[offsetFnFlags : offsetFnFlags+lengthFnFlags])

@@ -1,7 +1,6 @@
 package GoFor_MFT_Parser
 
 import (
-	ts "github.com/AlecRandazzo/Timestamp-Parser"
 	"reflect"
 	"testing"
 	"time"
@@ -20,10 +19,10 @@ func TestRawFileNameAttribute_Parse(t *testing.T) {
 			wantErr:              false,
 			rawFileNameAttribute: RawFileNameAttribute([]byte{48, 0, 0, 0, 104, 0, 0, 0, 0, 0, 24, 0, 0, 0, 3, 0, 74, 0, 0, 0, 24, 0, 1, 0, 5, 0, 0, 0, 0, 0, 5, 0, 234, 36, 205, 74, 116, 212, 209, 1, 234, 36, 205, 74, 116, 212, 209, 1, 234, 36, 205, 74, 116, 212, 209, 1, 234, 36, 205, 74, 116, 212, 209, 1, 0, 64, 0, 0, 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 0, 6, 0, 0, 0, 0, 0, 0, 0, 4, 3, 36, 0, 77, 0, 70, 0, 84, 0, 0, 0, 0, 0, 0, 0}),
 			want: FileNameAttribute{
-				FnCreated:    ts.TimeStamp(time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC)),
-				FnModified:   ts.TimeStamp(time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC)),
-				FnAccessed:   ts.TimeStamp(time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC)),
-				FnChanged:    ts.TimeStamp(time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC)),
+				FnCreated:    time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
+				FnModified:   time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
+				FnAccessed:   time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
+				FnChanged:    time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
 				FlagResident: true,
 				NameLength: NameLength{
 					FlagNamed: false,

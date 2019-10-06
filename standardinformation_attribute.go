@@ -12,15 +12,16 @@ package GoFor_MFT_Parser
 import (
 	"errors"
 	ts "github.com/AlecRandazzo/Timestamp-Parser"
+	"time"
 )
 
 type RawStandardInformationAttribute []byte
 
 type StandardInformationAttribute struct {
-	SiCreated    ts.TimeStamp
-	SiModified   ts.TimeStamp
-	SiAccessed   ts.TimeStamp
-	SiChanged    ts.TimeStamp
+	SiCreated    time.Time
+	SiModified   time.Time
+	SiAccessed   time.Time
+	SiChanged    time.Time
 	FlagResident FlagResidency
 }
 
@@ -52,9 +53,14 @@ func (rawStandardInformationAttribute RawStandardInformationAttribute) Parse() (
 	}
 
 	// Parse timestamps
-	_ = standardInformationAttribute.SiCreated.Parse(rawStandardInformationAttribute[offsetSiCreated : offsetSiCreated+lengthSiCreated])
-	_ = standardInformationAttribute.SiModified.Parse(rawStandardInformationAttribute[offsetSiModified : offsetSiModified+lengthSiModified])
-	_ = standardInformationAttribute.SiChanged.Parse(rawStandardInformationAttribute[offsetSiChanged : offsetSiChanged+lengthSiChanged])
-	_ = standardInformationAttribute.SiAccessed.Parse(rawStandardInformationAttribute[offsetSiAccessed : offsetSiAccessed+lengthSiAccessed])
+	rawSiCreated := ts.RawTimestamp(rawStandardInformationAttribute[offsetSiCreated : offsetSiCreated+lengthSiCreated])
+	rawSiModified := ts.RawTimestamp(rawStandardInformationAttribute[offsetSiModified : offsetSiModified+lengthSiModified])
+	rawSiChanged := ts.RawTimestamp(rawStandardInformationAttribute[offsetSiChanged : offsetSiChanged+lengthSiChanged])
+	rawSiAccessed := ts.RawTimestamp(rawStandardInformationAttribute[offsetSiAccessed : offsetSiAccessed+lengthSiAccessed])
+
+	standardInformationAttribute.SiCreated, _ = rawSiCreated.Parse()
+	standardInformationAttribute.SiModified, _ = rawSiModified.Parse()
+	standardInformationAttribute.SiChanged, _ = rawSiChanged.Parse()
+	standardInformationAttribute.SiAccessed, _ = rawSiAccessed.Parse()
 	return
 }

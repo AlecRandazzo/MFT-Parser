@@ -2,7 +2,6 @@ package GoFor_MFT_Parser
 
 import (
 	"bytes"
-	ts "github.com/AlecRandazzo/Timestamp-Parser"
 	"github.com/google/go-cmp/cmp"
 	"io"
 	"os"
@@ -60,18 +59,18 @@ func TestRawMasterFileTableRecord_Parse(t *testing.T) {
 					},
 				},
 				StandardInformationAttributes: StandardInformationAttribute{
-					SiCreated:    ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-					SiModified:   ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-					SiAccessed:   ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-					SiChanged:    ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
+					SiCreated:    time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+					SiModified:   time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+					SiAccessed:   time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+					SiChanged:    time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
 					FlagResident: true,
 				},
 				FileNameAttributes: FileNameAttributes{
 					0: FileNameAttribute{
-						FnCreated:               ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-						FnModified:              ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-						FnAccessed:              ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-						FnChanged:               ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
+						FnCreated:               time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+						FnModified:              time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+						FnAccessed:              time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+						FnChanged:               time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
 						FlagResident:            true,
 						NameLength:              NameLength{},
 						AttributeSize:           104,
@@ -207,7 +206,7 @@ func TestGetUsefulMftFields(t *testing.T) {
 	tests := []struct {
 		name                string
 		args                args
-		wantUseFulMftFields UseFulMftFields
+		wantUseFulMftFields UsefulMftFields
 	}{
 		{
 			name: "test1",
@@ -222,18 +221,18 @@ func TestGetUsefulMftFields(t *testing.T) {
 						},
 					},
 					StandardInformationAttributes: StandardInformationAttribute{
-						SiCreated:    ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-						SiModified:   ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-						SiAccessed:   ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-						SiChanged:    ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
+						SiCreated:    time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+						SiModified:   time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+						SiAccessed:   time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+						SiChanged:    time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
 						FlagResident: true,
 					},
 					FileNameAttributes: FileNameAttributes{
 						0: FileNameAttribute{
-							FnCreated:               ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-							FnModified:              ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-							FnAccessed:              ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-							FnChanged:               ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
+							FnCreated:               time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+							FnModified:              time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+							FnAccessed:              time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+							FnChanged:               time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
 							FlagResident:            true,
 							NameLength:              NameLength{},
 							AttributeSize:           104,
@@ -311,7 +310,7 @@ func TestGetUsefulMftFields(t *testing.T) {
 				},
 				directoryTree: DirectoryTree{},
 			},
-			wantUseFulMftFields: UseFulMftFields{
+			wantUseFulMftFields: UsefulMftFields{
 				RecordNumber:     0,
 				FilePath:         "$ORPHANFILE\\",
 				FullPath:         "$ORPHANFILE\\$MFT",
@@ -321,14 +320,14 @@ func TestGetUsefulMftFields(t *testing.T) {
 				ReadOnlyFlag:     false,
 				DirectoryFlag:    false,
 				DeletedFlag:      false,
-				FnCreated:        ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-				FnModified:       ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-				FnAccessed:       ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-				FnChanged:        ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-				SiCreated:        ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-				SiModified:       ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-				SiAccessed:       ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-				SiChanged:        ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
+				FnCreated:        time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+				FnModified:       time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+				FnAccessed:       time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+				FnChanged:        time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+				SiCreated:        time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+				SiModified:       time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+				SiAccessed:       time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+				SiChanged:        time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
 				PhysicalFileSize: 16384,
 			},
 		},
@@ -345,18 +344,18 @@ func TestGetUsefulMftFields(t *testing.T) {
 						},
 					},
 					StandardInformationAttributes: StandardInformationAttribute{
-						SiCreated:    ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-						SiModified:   ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-						SiAccessed:   ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-						SiChanged:    ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
+						SiCreated:    time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+						SiModified:   time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+						SiAccessed:   time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+						SiChanged:    time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
 						FlagResident: true,
 					},
 					FileNameAttributes: FileNameAttributes{
 						0: FileNameAttribute{
-							FnCreated:               ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-							FnModified:              ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-							FnAccessed:              ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-							FnChanged:               ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
+							FnCreated:               time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+							FnModified:              time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+							FnAccessed:              time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+							FnChanged:               time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
 							FlagResident:            true,
 							NameLength:              NameLength{},
 							AttributeSize:           104,
@@ -436,7 +435,7 @@ func TestGetUsefulMftFields(t *testing.T) {
 					5: "\\",
 				},
 			},
-			wantUseFulMftFields: UseFulMftFields{
+			wantUseFulMftFields: UsefulMftFields{
 				RecordNumber:     0,
 				FilePath:         "\\",
 				FullPath:         "\\$MFT",
@@ -446,14 +445,14 @@ func TestGetUsefulMftFields(t *testing.T) {
 				ReadOnlyFlag:     false,
 				DirectoryFlag:    false,
 				DeletedFlag:      false,
-				FnCreated:        ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-				FnModified:       ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-				FnAccessed:       ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-				FnChanged:        ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-				SiCreated:        ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-				SiModified:       ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-				SiAccessed:       ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
-				SiChanged:        ts.TimeStamp(time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC)),
+				FnCreated:        time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+				FnModified:       time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+				FnAccessed:       time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+				FnChanged:        time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+				SiCreated:        time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+				SiModified:       time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+				SiAccessed:       time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
+				SiChanged:        time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
 				PhysicalFileSize: 16384,
 			},
 		},
@@ -467,12 +466,12 @@ func TestGetUsefulMftFields(t *testing.T) {
 	}
 }
 
-type WriteToSlice []UseFulMftFields
+type WriteToSlice []UsefulMftFields
 
-func (writer *WriteToSlice) Write(outputChannel *chan UseFulMftFields, waitGroup *sync.WaitGroup) (err error) {
+func (writer *WriteToSlice) Write(outputChannel *chan UsefulMftFields, waitGroup *sync.WaitGroup) (err error) {
 	openChannel := true
 	for openChannel != false {
-		var record UseFulMftFields
+		var record UsefulMftFields
 		record, openChannel = <-*outputChannel
 		*writer = append(*writer, record)
 	}
@@ -485,12 +484,12 @@ func TestParseMftRecords(t *testing.T) {
 		reader          io.Reader
 		bytesPerCluster int64
 		directoryTree   DirectoryTree
-		outputChannel   chan UseFulMftFields
+		outputChannel   chan UsefulMftFields
 	}
 	tests := []struct {
 		name string
 		args args
-		want []UseFulMftFields
+		want []UsefulMftFields
 	}{
 		{
 			name: "test1",
@@ -502,7 +501,7 @@ func TestParseMftRecords(t *testing.T) {
 				},
 				outputChannel: nil,
 			},
-			want: []UseFulMftFields{
+			want: []UsefulMftFields{
 				0: {
 					RecordNumber:     1,
 					FilePath:         ".\\",
@@ -513,14 +512,14 @@ func TestParseMftRecords(t *testing.T) {
 					ReadOnlyFlag:     false,
 					DirectoryFlag:    false,
 					DeletedFlag:      false,
-					FnCreated:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnModified:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnAccessed:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnChanged:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiCreated:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiModified:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiAccessed:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiChanged:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
+					FnCreated:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnModified:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnAccessed:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnChanged:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiCreated:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiModified:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiAccessed:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiChanged:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
 					PhysicalFileSize: 4096,
 				},
 				1: {
@@ -534,26 +533,26 @@ func TestParseMftRecords(t *testing.T) {
 					DirectoryFlag:    false,
 					DeletedFlag:      false,
 					PhysicalFileSize: 0,
-					FnCreated:        ts.TimeStamp{},
-					FnModified:       ts.TimeStamp{},
-					FnAccessed:       ts.TimeStamp{},
-					FnChanged:        ts.TimeStamp{},
-					SiCreated:        ts.TimeStamp{},
-					SiModified:       ts.TimeStamp{},
-					SiAccessed:       ts.TimeStamp{},
-					SiChanged:        ts.TimeStamp{},
+					FnCreated:        time.Time{},
+					FnModified:       time.Time{},
+					FnAccessed:       time.Time{},
+					FnChanged:        time.Time{},
+					SiCreated:        time.Time{},
+					SiModified:       time.Time{},
+					SiAccessed:       time.Time{},
+					SiChanged:        time.Time{},
 				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.args.outputChannel = make(chan UseFulMftFields, 100)
+			tt.args.outputChannel = make(chan UsefulMftFields, 100)
 			ParseMftRecords(tt.args.reader, tt.args.bytesPerCluster, tt.args.directoryTree, &tt.args.outputChannel)
-			got := make([]UseFulMftFields, 0)
+			got := make([]UsefulMftFields, 0)
 			openChannel := true
 			for openChannel == true {
-				var result UseFulMftFields
+				var result UsefulMftFields
 				result, openChannel = <-tt.args.outputChannel
 				got = append(got, result)
 			}
@@ -596,14 +595,14 @@ func TestParseMFT(t *testing.T) {
 					ReadOnlyFlag:     false,
 					DirectoryFlag:    false,
 					DeletedFlag:      false,
-					FnCreated:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnModified:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnAccessed:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnChanged:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiCreated:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiModified:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiAccessed:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiChanged:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
+					FnCreated:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnModified:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnAccessed:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnChanged:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiCreated:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiModified:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiAccessed:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiChanged:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
 					PhysicalFileSize: 16384,
 				},
 				1: {
@@ -616,14 +615,14 @@ func TestParseMFT(t *testing.T) {
 					ReadOnlyFlag:     false,
 					DirectoryFlag:    false,
 					DeletedFlag:      false,
-					FnCreated:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnModified:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnAccessed:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnChanged:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiCreated:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiModified:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiAccessed:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiChanged:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
+					FnCreated:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnModified:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnAccessed:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnChanged:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiCreated:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiModified:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiAccessed:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiChanged:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
 					PhysicalFileSize: 4096,
 				},
 				2: {
@@ -636,14 +635,14 @@ func TestParseMFT(t *testing.T) {
 					ReadOnlyFlag:     false,
 					DirectoryFlag:    false,
 					DeletedFlag:      false,
-					FnCreated:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnModified:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnAccessed:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnChanged:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiCreated:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiModified:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiAccessed:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiChanged:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
+					FnCreated:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnModified:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnAccessed:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnChanged:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiCreated:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiModified:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiAccessed:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiChanged:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
 					PhysicalFileSize: 67108864,
 				},
 				3: {
@@ -656,14 +655,14 @@ func TestParseMFT(t *testing.T) {
 					ReadOnlyFlag:     false,
 					DirectoryFlag:    false,
 					DeletedFlag:      false,
-					FnCreated:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnModified:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnAccessed:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnChanged:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiCreated:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiModified:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiAccessed:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiChanged:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
+					FnCreated:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnModified:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnAccessed:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnChanged:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiCreated:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiModified:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiAccessed:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiChanged:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
 					PhysicalFileSize: 0,
 				},
 				4: {
@@ -676,14 +675,14 @@ func TestParseMFT(t *testing.T) {
 					ReadOnlyFlag:     false,
 					DirectoryFlag:    false,
 					DeletedFlag:      false,
-					FnCreated:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnModified:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnAccessed:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnChanged:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiCreated:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiModified:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiAccessed:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiChanged:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
+					FnCreated:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnModified:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnAccessed:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnChanged:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiCreated:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiModified:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiAccessed:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiChanged:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
 					PhysicalFileSize: 2400,
 				},
 				5: {
@@ -696,17 +695,17 @@ func TestParseMFT(t *testing.T) {
 					ReadOnlyFlag:     false,
 					DirectoryFlag:    true,
 					DeletedFlag:      false,
-					FnCreated:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnModified:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnAccessed:       ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					FnChanged:        ts.TimeStamp(time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC)),
-					SiCreated:        ts.TimeStamp(time.Date(2017, 9, 29, 8, 45, 11, 680123300, time.UTC)),
-					SiModified:       ts.TimeStamp(time.Date(2019, 9, 8, 14, 53, 21, 936932600, time.UTC)),
-					SiAccessed:       ts.TimeStamp(time.Date(2019, 9, 8, 14, 53, 21, 936932600, time.UTC)),
-					SiChanged:        ts.TimeStamp(time.Date(2019, 9, 8, 14, 53, 21, 936932600, time.UTC)),
+					FnCreated:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnModified:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnAccessed:       time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					FnChanged:        time.Date(2018, 2, 25, 0, 10, 45, 642455000, time.UTC),
+					SiCreated:        time.Date(2017, 9, 29, 8, 45, 11, 680123300, time.UTC),
+					SiModified:       time.Date(2019, 9, 8, 14, 53, 21, 936932600, time.UTC),
+					SiAccessed:       time.Date(2019, 9, 8, 14, 53, 21, 936932600, time.UTC),
+					SiChanged:        time.Date(2019, 9, 8, 14, 53, 21, 936932600, time.UTC),
 					PhysicalFileSize: 0,
 				},
-				6: UseFulMftFields{
+				6: UsefulMftFields{
 					RecordNumber:     0,
 					FilePath:         "",
 					FullPath:         "",
@@ -716,14 +715,14 @@ func TestParseMFT(t *testing.T) {
 					ReadOnlyFlag:     false,
 					DirectoryFlag:    false,
 					DeletedFlag:      false,
-					FnCreated:        ts.TimeStamp{},
-					FnModified:       ts.TimeStamp{},
-					FnAccessed:       ts.TimeStamp{},
-					FnChanged:        ts.TimeStamp{},
-					SiCreated:        ts.TimeStamp{},
-					SiModified:       ts.TimeStamp{},
-					SiAccessed:       ts.TimeStamp{},
-					SiChanged:        ts.TimeStamp{},
+					FnCreated:        time.Time{},
+					FnModified:       time.Time{},
+					FnAccessed:       time.Time{},
+					FnChanged:        time.Time{},
+					SiCreated:        time.Time{},
+					SiModified:       time.Time{},
+					SiAccessed:       time.Time{},
+					SiChanged:        time.Time{},
 					PhysicalFileSize: 0,
 				},
 			},

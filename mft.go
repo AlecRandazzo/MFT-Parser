@@ -13,11 +13,11 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
-	ts "github.com/AlecRandazzo/Timestamp-Parser"
 	"io"
 	"os"
 	"strings"
 	"sync"
+	"time"
 )
 
 type MasterFileTableRecord struct {
@@ -28,25 +28,25 @@ type MasterFileTableRecord struct {
 }
 
 //TODO fill out these tags for json, csv, bson, and protobuf
-type UseFulMftFields struct {
-	RecordNumber     uint32       `json:"RecordNumber,number"`
-	FilePath         string       `json:"FilePath,string"`
-	FullPath         string       `json:"FullPath,string"`
-	FileName         string       `json:"FileName,string"`
-	SystemFlag       bool         `json:"SystemFlag,bool"`
-	HiddenFlag       bool         `json:"HiddenFlag,bool"`
-	ReadOnlyFlag     bool         `json:"ReadOnlyFlag,bool"`
-	DirectoryFlag    bool         `json:"DirectoryFlag,bool"`
-	DeletedFlag      bool         `json:"DeletedFlag,bool"`
-	FnCreated        ts.TimeStamp `json:"FnCreated"`
-	FnModified       ts.TimeStamp `json:"FnModified"`
-	FnAccessed       ts.TimeStamp `json:"FnAccessed"`
-	FnChanged        ts.TimeStamp `json:"FnChanged"`
-	SiCreated        ts.TimeStamp `json:"SiCreated"`
-	SiModified       ts.TimeStamp `json:"SiModified"`
-	SiAccessed       ts.TimeStamp `json:"SiAccessed"`
-	SiChanged        ts.TimeStamp `json:"SiChanged"`
-	PhysicalFileSize uint64       `json:"PhysicalFileSize,number"`
+type UsefulMftFields struct {
+	RecordNumber     uint32    `json:"RecordNumber,number"`
+	FilePath         string    `json:"FilePath,string"`
+	FullPath         string    `json:"FullPath,string"`
+	FileName         string    `json:"FileName,string"`
+	SystemFlag       bool      `json:"SystemFlag,bool"`
+	HiddenFlag       bool      `json:"HiddenFlag,bool"`
+	ReadOnlyFlag     bool      `json:"ReadOnlyFlag,bool"`
+	DirectoryFlag    bool      `json:"DirectoryFlag,bool"`
+	DeletedFlag      bool      `json:"DeletedFlag,bool"`
+	FnCreated        time.Time `json:"FnCreated"`
+	FnModified       time.Time `json:"FnModified"`
+	FnAccessed       time.Time `json:"FnAccessed"`
+	FnChanged        time.Time `json:"FnChanged"`
+	SiCreated        time.Time `json:"SiCreated"`
+	SiModified       time.Time `json:"SiModified"`
+	SiAccessed       time.Time `json:"SiAccessed"`
+	SiChanged        time.Time `json:"SiChanged"`
+	PhysicalFileSize uint64    `json:"PhysicalFileSize,number"`
 }
 
 type RawMasterFileTableRecord []byte
@@ -54,7 +54,7 @@ type RawMasterFileTableRecord []byte
 // Parse an already extracted MFT and write the results to a file.
 func ParseMFT(fileHandle *os.File, writer OutputWriters, bytesPerCluster int64) {
 	directoryTree, _ := BuildDirectoryTree(fileHandle)
-	outputChannel := make(chan UseFulMftFields, 100)
+	outputChannel := make(chan UsefulMftFields, 100)
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(1)
 	go writer.Write(&outputChannel, &waitGroup)
@@ -65,7 +65,7 @@ func ParseMFT(fileHandle *os.File, writer OutputWriters, bytesPerCluster int64) 
 	return
 }
 
-func ParseMftRecords(reader io.Reader, bytesPerCluster int64, directoryTree DirectoryTree, outputChannel *chan UseFulMftFields) {
+func ParseMftRecords(reader io.Reader, bytesPerCluster int64, directoryTree DirectoryTree, outputChannel *chan UsefulMftFields) {
 	for {
 		buffer := make([]byte, 1024)
 		_, err := reader.Read(buffer)
@@ -87,7 +87,7 @@ func ParseMftRecords(reader io.Reader, bytesPerCluster int64, directoryTree Dire
 	return
 }
 
-func GetUsefulMftFields(mftRecord MasterFileTableRecord, directoryTree DirectoryTree) (useFulMftFields UseFulMftFields) {
+func GetUsefulMftFields(mftRecord MasterFileTableRecord, directoryTree DirectoryTree) (useFulMftFields UsefulMftFields) {
 	for _, record := range mftRecord.FileNameAttributes {
 		if strings.Contains(record.FileNamespace, "WIN32") || strings.Contains(record.FileNamespace, "POSIX") {
 			if directory, ok := directoryTree[record.ParentDirRecordNumber]; ok {

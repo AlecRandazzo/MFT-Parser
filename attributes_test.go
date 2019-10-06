@@ -1,7 +1,6 @@
 package GoFor_MFT_Parser
 
 import (
-	ts "github.com/AlecRandazzo/Timestamp-Parser"
 	"reflect"
 	"testing"
 	"time"
@@ -65,18 +64,18 @@ func TestRawAttributes_Parse(t *testing.T) {
 				3: RawAttribute([]byte{176, 0, 0, 0, 72, 0, 0, 0, 1, 0, 64, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 42, 0, 0, 0, 0, 0, 0, 0, 64, 0, 0, 0, 0, 0, 0, 0, 0, 176, 2, 0, 0, 0, 0, 0, 8, 160, 2, 0, 0, 0, 0, 0, 8, 160, 2, 0, 0, 0, 0, 0, 49, 43, 103, 244, 2, 0, 0, 0}),
 			},
 			wantStandardInformationAttribute: StandardInformationAttribute{
-				SiCreated:    ts.TimeStamp(time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC)),
-				SiModified:   ts.TimeStamp(time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC)),
-				SiAccessed:   ts.TimeStamp(time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC)),
-				SiChanged:    ts.TimeStamp(time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC)),
+				SiCreated:    time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
+				SiModified:   time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
+				SiAccessed:   time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
+				SiChanged:    time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
 				FlagResident: true,
 			},
 			wantFileNameAttributes: FileNameAttributes{
 				FileNameAttribute{
-					FnCreated:    ts.TimeStamp(time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC)),
-					FnModified:   ts.TimeStamp(time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC)),
-					FnAccessed:   ts.TimeStamp(time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC)),
-					FnChanged:    ts.TimeStamp(time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC)),
+					FnCreated:    time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
+					FnModified:   time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
+					FnAccessed:   time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
+					FnChanged:    time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
 					FlagResident: true,
 					NameLength: NameLength{
 						FlagNamed: false,
