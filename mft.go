@@ -14,8 +14,8 @@ import (
 	"errors"
 	"fmt"
 	ts "github.com/AlecRandazzo/Timestamp-Parser"
-	log "github.com/sirupsen/logrus"
 	"io"
+	"os"
 	"strings"
 	"sync"
 )
@@ -52,44 +52,38 @@ type UseFulMftFields struct {
 type RawMasterFileTableRecord []byte
 
 // Parse an already extracted MFT and write the results to a file.
-func ParseMFT(reader io.Reader, writer OutputWriters, bytesPerCluster int64) (err error) {
-	var buffer bytes.Buffer
-	tee := io.TeeReader(reader, &buffer)
-	directoryTree, _ := BuildDirectoryTree(tee)
-
+func ParseMFT(fileHandle *os.File, writer OutputWriters, bytesPerCluster int64) {
+	directoryTree, _ := BuildDirectoryTree(fileHandle)
 	outputChannel := make(chan UseFulMftFields, 100)
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(1)
-
 	go writer.Write(&outputChannel, &waitGroup)
+	// Seek back to the beginning of the file
+	_, _ = fileHandle.Seek(0, 0)
+	ParseMftRecords(fileHandle, bytesPerCluster, directoryTree, &outputChannel)
+	waitGroup.Wait()
+	return
+}
 
-	timeToBreak := false
-	for timeToBreak == false {
+func ParseMftRecords(reader io.Reader, bytesPerCluster int64, directoryTree DirectoryTree, outputChannel *chan UseFulMftFields) {
+	for {
 		buffer := make([]byte, 1024)
-		offset, err := reader.Read(buffer)
+		_, err := reader.Read(buffer)
 		if err == io.EOF {
 			err = nil
-			timeToBreak = true
+			break
 		}
 		rawMftRecord := RawMasterFileTableRecord(buffer)
 		mftRecord, err := rawMftRecord.Parse(bytesPerCluster)
 		if err != nil {
-			log.WithFields(log.Fields{
-				"mft_offset":   offset,
-				"deleted_flag": mftRecord.RecordHeader.Flags.FlagDeleted,
-			}).Debug(err)
-			continue
-		}
-		if len(mftRecord.FileNameAttributes) == 0 {
 			continue
 		}
 
 		usefulMftFields := GetUsefulMftFields(mftRecord, directoryTree)
-		outputChannel <- usefulMftFields
+		*outputChannel <- usefulMftFields
 
 	}
-	close(outputChannel)
-	waitGroup.Wait()
+	close(*outputChannel)
 	return
 }
 
@@ -145,7 +139,7 @@ func (rawMftRecord RawMasterFileTableRecord) Parse(bytesPerCluster int64) (mftRe
 		return
 	}
 	if result == false {
-		err = fmt.Errorf("failed to parse the raw mft record: %v", err)
+		err = fmt.Errorf("this is not an mft record: %v", err)
 		return
 	}
 

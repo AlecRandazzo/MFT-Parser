@@ -1,7 +1,6 @@
 package GoFor_MFT_Parser
 
 import (
-	"fmt"
 	ts "github.com/AlecRandazzo/Timestamp-Parser"
 	"reflect"
 	"testing"
@@ -213,7 +212,6 @@ func TestRawAttributes_Parse(t *testing.T) {
 			}
 			if !reflect.DeepEqual(gotStandardInformationAttribute, tt.wantStandardInformationAttribute) {
 				t.Errorf("Parse() gotStandardInformationAttribute = %v, want %v", gotStandardInformationAttribute, tt.wantStandardInformationAttribute)
-				fmt.Println(time.Time(gotStandardInformationAttribute.SiCreated).Format("2006-01-02T15:04:05Z"))
 			}
 			if !reflect.DeepEqual(gotDataAttribute, tt.wantDataAttribute) {
 				t.Errorf("Parse() gotDataAttribute = %v, want %v", gotDataAttribute, tt.wantDataAttribute)
