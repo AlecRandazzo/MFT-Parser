@@ -468,7 +468,7 @@ func TestGetUsefulMftFields(t *testing.T) {
 
 type WriteToSlice []UsefulMftFields
 
-func (writer *WriteToSlice) Write(outputChannel *chan UsefulMftFields, waitGroup *sync.WaitGroup) (err error) {
+func (writer *WriteToSlice) ResultWriter(streamer io.Writer, outputChannel *chan UsefulMftFields, waitGroup *sync.WaitGroup) {
 	openChannel := true
 	for openChannel != false {
 		var record UsefulMftFields
@@ -568,6 +568,7 @@ func TestParseMFT(t *testing.T) {
 	type args struct {
 		fileHandle      *os.File
 		writer          WriteToSlice
+		streamer        io.Writer
 		bytesPerCluster int64
 	}
 	tests := []struct {
@@ -731,7 +732,7 @@ func TestParseMFT(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.args.fileHandle, _ = os.Open(tt.testFile)
-			ParseMFT(tt.args.fileHandle, &tt.args.writer, tt.args.bytesPerCluster)
+			ParseMFT(tt.args.fileHandle, &tt.args.writer, tt.args.streamer, tt.args.bytesPerCluster)
 			if !reflect.DeepEqual(tt.args.writer, tt.want) {
 				t.Errorf(cmp.Diff(tt.args.writer, tt.want))
 			}

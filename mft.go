@@ -52,12 +52,12 @@ type UsefulMftFields struct {
 type RawMasterFileTableRecord []byte
 
 // Parse an already extracted MFT and write the results to a file.
-func ParseMFT(fileHandle *os.File, writer OutputWriters, bytesPerCluster int64) {
+func ParseMFT(fileHandle *os.File, writer ResultWriter, streamer io.Writer, bytesPerCluster int64) {
 	directoryTree, _ := BuildDirectoryTree(fileHandle)
 	outputChannel := make(chan UsefulMftFields, 100)
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(1)
-	go writer.Write(&outputChannel, &waitGroup)
+	go writer.ResultWriter(streamer, &outputChannel, &waitGroup)
 	// Seek back to the beginning of the file
 	_, _ = fileHandle.Seek(0, 0)
 	ParseMftRecords(fileHandle, bytesPerCluster, directoryTree, &outputChannel)

@@ -10,27 +10,20 @@
 package GoFor_MFT_Parser
 
 import (
-	"encoding/csv"
 	"fmt"
 	"io"
-	"log"
 	"strconv"
 	"sync"
-	"time"
 )
 
-type OutputWriters interface {
-	Write(outputChannel *chan UseFulMftFields, waitGroup *sync.WaitGroup) (err error)
+type ResultWriter interface {
+	ResultWriter(streamer io.Writer, outputChannel *chan UsefulMftFields, waitGroup *sync.WaitGroup)
 }
 
-type CsvWriter struct {
-	OutStream io.Writer
-}
+type CsvResultWriter struct{}
 
-func (writer CsvWriter) Write(outputChannel *chan UseFulMftFields, waitGroup *sync.WaitGroup) (err error) {
-
-	csvWriter := csv.NewWriter(writer.OutStream)
-	csvWriter.Comma = '|'
+func (csvResultWriter *CsvResultWriter) ResultWriter(streamer io.Writer, outputChannel *chan UsefulMftFields, waitGroup *sync.WaitGroup) {
+	delimiter := "|"
 	csvHeader := []string{
 		"Record Number",
 		"directory Flag",
@@ -45,45 +38,58 @@ func (writer CsvWriter) Write(outputChannel *chan UseFulMftFields, waitGroup *sy
 		"File Modified",
 		"File Accessed",
 		"File Entry Modified",
-		"FileName Created ",
-		"FileName Modified ",
-		"Filename Accessed ",
-		"Filename Entry Modified ",
+		"FileName Created",
+		"FileName Modified",
+		"Filename Accessed",
+		"Filename Entry Modified",
+		"\n",
 	}
-	err = csvWriter.Write(csvHeader)
-	if err != nil {
-		log.Fatal(err)
+
+	// Write CSV header
+	headerSize := len(csvHeader)
+	for index, header := range csvHeader {
+		_, _ = streamer.Write([]byte(header))
+		if index < headerSize-2 {
+			_, _ = streamer.Write([]byte(delimiter))
+		}
 	}
 
 	openChannel := true
-	for openChannel != false {
-		var csvRow []string
-		var file UseFulMftFields
+	for {
+		var file UsefulMftFields
 		file, openChannel = <-*outputChannel
-		csvRow = []string{
-			fmt.Sprint(file.RecordNumber),                             //Record Number
-			strconv.FormatBool(file.DirectoryFlag),                    //directory Flag
-			strconv.FormatBool(file.SystemFlag),                       //System file flag
-			strconv.FormatBool(file.HiddenFlag),                       //Hidden flag
-			strconv.FormatBool(file.ReadOnlyFlag),                     //Read only flag
-			strconv.FormatBool(file.DeletedFlag),                      //Deleted Flag
-			file.FilePath,                                             //File directory
-			file.FileName,                                             //File Name
-			strconv.FormatUint(file.PhysicalFileSize, 10),             // File Size
-			time.Time(file.SiCreated).Format("2006-01-02T15:04:05Z"),  //File Created
-			time.Time(file.SiModified).Format("2006-01-02T15:04:05Z"), //File Modified
-			time.Time(file.SiAccessed).Format("2006-01-02T15:04:05Z"), //File Accessed
-			time.Time(file.SiChanged).Format("2006-01-02T15:04:05Z"),  //File entry Modified
-			time.Time(file.FnCreated).Format("2006-01-02T15:04:05Z"),  //FileName Created
-			time.Time(file.FnModified).Format("2006-01-02T15:04:05Z"), //FileName Modified
-			time.Time(file.FnAccessed).Format("2006-01-02T15:04:05Z"), //FileName Accessed
-			time.Time(file.FnChanged).Format("2006-01-02T15:04:05Z"),  //FileName Entry Modified
+		if openChannel == false {
+			break
 		}
-		err = csvWriter.Write(csvRow)
-		if err != nil {
-			log.Fatal(err)
+		csvRow := []string{
+			fmt.Sprint(file.RecordNumber),                  //Record Number
+			strconv.FormatBool(file.DirectoryFlag),         //directory Flag
+			strconv.FormatBool(file.SystemFlag),            //System file flag
+			strconv.FormatBool(file.HiddenFlag),            //Hidden flag
+			strconv.FormatBool(file.ReadOnlyFlag),          //Read only flag
+			strconv.FormatBool(file.DeletedFlag),           //Deleted Flag
+			file.FilePath,                                  //File directory
+			file.FileName,                                  //File Name
+			strconv.FormatUint(file.PhysicalFileSize, 10),  // File Size
+			file.SiCreated.Format("2006-01-02T15:04:05Z"),  //File Created
+			file.SiModified.Format("2006-01-02T15:04:05Z"), //File Modified
+			file.SiAccessed.Format("2006-01-02T15:04:05Z"), //File Accessed
+			file.SiChanged.Format("2006-01-02T15:04:05Z"),  //File entry Modified
+			file.FnCreated.Format("2006-01-02T15:04:05Z"),  //FileName Created
+			file.FnModified.Format("2006-01-02T15:04:05Z"), //FileName Modified
+			file.FnAccessed.Format("2006-01-02T15:04:05Z"), //FileName Accessed
+			file.FnChanged.Format("2006-01-02T15:04:05Z"),  //FileName Entry Modified
+			"\n", // Newline
 		}
-		break
+
+		csvRowSize := len(csvRow)
+		for index, item := range csvRow {
+			_, _ = streamer.Write([]byte(item))
+			if index < csvRowSize-2 {
+				_, _ = streamer.Write([]byte(delimiter))
+			}
+		}
+
 	}
 	waitGroup.Done()
 	return
