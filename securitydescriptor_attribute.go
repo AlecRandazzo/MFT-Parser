@@ -9,25 +9,22 @@
 
 package GoFor_MFT_Parser
 
-//func parseSecurityDescriptorAttribute(attributeBytes []byte) {
-//	// https://flatcap.org/linux-ntfs/ntfs/attributes/security_descriptor.html
-//
-//	const offsetRevision = 0x00
-//
-//	const offsetControlFlags = 0x02
-//	const lengthControlFlags = 0x02
-//
+//func (mftRecord *MasterFileTableRecord) ParseSecurityDescriptorAttribute(attributeBytes []byte) {
 //	const offsetUserSIDOffset = 0x04
 //	const lengthUserSIDOffset = 0x04
-//
 //	const offsetGroupSIDOffset = 0x08
 //	const lengthGroupSIDOffset = 0x04
+//	const codeSecurityDescriptor = 0x50
 //
-//	const offsetSACLOffset = 0x0c
-//	const lengthSACLOffset = 0x04
-//
-//	const offsetDACLOffset = 0x10
-//	const lengthDACLOffset = 0x04
+//	//var userSidBytes []byte
+//	//var groupSidBytes []byte
+//	//
+//	//for _, Attribute := range mftRecord.MftRecordBytes {
+//	//	if Attribute == codeSecurityDescriptor {
+//	//		userSidBytes = attributeBytes[offsetUserSIDOffset : offsetUserSIDOffset + lengthUserSIDOffset]
+//	//		groupSidBytes = attributeBytes[offsetGroupSIDOffset : offsetGroupSIDOffset + lengthGroupSIDOffset]
+//	//	}
+//	//}
 //
 //	return
 //}

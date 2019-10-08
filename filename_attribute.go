@@ -11,19 +11,23 @@ package GoFor_MFT_Parser
 
 import (
 	"encoding/binary"
-	"encoding/hex"
-	"github.com/pkg/errors"
-	"strings"
+	"errors"
+	bin "github.com/AlecRandazzo/BinaryTransforms"
+	ts "github.com/AlecRandazzo/Timestamp-Parser"
+	"time"
 )
 
-type FileNameAttributes struct {
-	FnCreated               string
-	FnModified              string
-	FnAccessed              string
-	FnChanged               string
-	FlagResident            bool
-	FlagNamed               bool
-	NamedSize               byte
+type FileNameAttributes []FileNameAttribute
+
+type FlagResidency bool
+
+type FileNameAttribute struct {
+	FnCreated               time.Time
+	FnModified              time.Time
+	FnAccessed              time.Time
+	FnChanged               time.Time
+	FlagResident            FlagResidency
+	NameLength              NameLength
 	AttributeSize           uint32
 	ParentDirRecordNumber   uint64
 	ParentDirSequenceNumber uint16
@@ -33,6 +37,11 @@ type FileNameAttributes struct {
 	FileNameLength          byte
 	FileNamespace           string
 	FileName                string
+}
+
+type NameLength struct {
+	FlagNamed bool
+	NamedSize byte
 }
 
 type FileNameFlags struct {
@@ -53,14 +62,13 @@ type FileNameFlags struct {
 	IndexView         bool
 }
 
-func (mftRecord *MasterFileTableRecord) GetFileNameAttributes() (err error) {
-	const codeFileName = 0x30
+type RawFileNameAttribute []byte
 
+func (rawFileNameAttribute RawFileNameAttribute) Parse() (filenameAttribute FileNameAttribute, err error) {
 	const offsetAttributeSize = 0x04
 	const lengthAttributeSize = 0x04
 
 	const offsetResidentFlag = 0x08
-	const offsetNameLength = 0x09
 
 	const offsetParentRecordNumber = 0x18
 	const lengthParentRecordNumber = 0x06
@@ -93,172 +101,131 @@ func (mftRecord *MasterFileTableRecord) GetFileNameAttributes() (err error) {
 	const offsetFileNameSpace = 0x59
 	const offsetFileName = 0x5a
 
-	defer func() {
-		if r := recover(); r != nil {
-			err = errors.Errorf("Failed to parse filename attribute")
-		}
-	}()
+	// The filename Attribute has a minimum length of 0x44
+	attributeLength := len(rawFileNameAttribute)
+	if attributeLength < 0x44 {
+		err = errors.New("FileNameAttribute.Parse() did not receive valid bytes")
+		return
+	}
+	filenameAttribute.FlagResident.Parse(rawFileNameAttribute[offsetResidentFlag])
+	if filenameAttribute.FlagResident == false {
+		err = errors.New("parseFileNameAttribute(): non-resident filename Attribute encountered")
+		return
+	}
+	filenameAttribute.AttributeSize, _ = bin.LittleEndianBinaryToUInt32(rawFileNameAttribute[offsetAttributeSize : offsetAttributeSize+lengthAttributeSize])
 
-	for _, attribute := range mftRecord.AttributeInfo {
-		if attribute.AttributeType == codeFileName {
-			// The filename attribute has a minimum length of 0x44
-			if len(attribute.AttributeBytes) < 0x44 {
-				return
-			}
-			var fileNameAttributes FileNameAttributes
-			fileNameAttributes.AttributeSize = binary.LittleEndian.Uint32(attribute.AttributeBytes[offsetAttributeSize : offsetAttributeSize+lengthAttributeSize])
+	filenameAttribute.ParentDirRecordNumber, _ = bin.LittleEndianBinaryToUInt64(rawFileNameAttribute[offsetParentRecordNumber : offsetParentRecordNumber+lengthParentRecordNumber])
+	filenameAttribute.ParentDirSequenceNumber, _ = bin.LittleEndianBinaryToUInt16(rawFileNameAttribute[offsetParentDirSequenceNumber : offsetParentDirSequenceNumber+lengthParentDirSequenceNumber])
 
-			switch attribute.AttributeBytes[offsetResidentFlag] {
-			case 0x00:
-				fileNameAttributes.FlagResident = true
-			default:
-				fileNameAttributes.FlagResident = false
-				err = errors.Errorf("\nparseFileNameAttribute(): non-resident filename attribute encountered, hex dump: %s", hex.EncodeToString(attribute.AttributeBytes))
-				return
-			}
+	rawFnCreated := ts.RawTimestamp(rawFileNameAttribute[offsetFnCreated : offsetFnCreated+lengthFnCreated])
+	rawFnModified := ts.RawTimestamp(rawFileNameAttribute[offsetFnModified : offsetFnModified+lengthFnModified])
+	rawFnChanged := ts.RawTimestamp(rawFileNameAttribute[offsetFnChanged : offsetFnChanged+lengthFnChanged])
+	rawFnAccessed := ts.RawTimestamp(rawFileNameAttribute[offsetFnAccessed : offsetFnAccessed+lengthFnAccessed])
 
-			var nameLengthOffsetModifier byte
-			switch attribute.AttributeBytes[offsetNameLength] {
-			case 0x00:
-				fileNameAttributes.FlagNamed = false
-				nameLengthOffsetModifier = 0x00
-			default:
-				fileNameAttributes.FlagNamed = true
-				fileNameAttributes.NamedSize = attribute.AttributeBytes[offsetNameLength]
-				nameLengthOffsetModifier = nameLengthOffsetModifier * 2 // x2 to account for unicode
-			}
+	filenameAttribute.FnCreated, _ = rawFnCreated.Parse()
+	filenameAttribute.FnModified, _ = rawFnModified.Parse()
+	filenameAttribute.FnChanged, _ = rawFnChanged.Parse()
+	filenameAttribute.FnAccessed, _ = rawFnAccessed.Parse()
+	filenameAttribute.LogicalFileSize, _ = bin.LittleEndianBinaryToUInt64(rawFileNameAttribute[offsetLogicalFileSize : offsetLogicalFileSize+lengthLogicalFileSize])
+	filenameAttribute.PhysicalFileSize, _ = bin.LittleEndianBinaryToUInt64(rawFileNameAttribute[offSetPhysicalFileSize : offSetPhysicalFileSize+lengthPhysicalFileSize])
+	filenameAttribute.FileNameFlags.Parse(rawFileNameAttribute[offsetFnFlags : offsetFnFlags+lengthFnFlags])
+	filenameAttribute.FileNameLength = rawFileNameAttribute[offsetFileNameLength] * 2 // times two to account for unicode characters
+	filenameAttribute.FileNamespace = identifyFileNamespace(rawFileNameAttribute[offsetFileNameSpace])
+	filenameAttribute.FileName, _ = bin.UnicodeBytesToASCII(rawFileNameAttribute[offsetFileName : offsetFileName+int(filenameAttribute.FileNameLength)])
+	return
+}
 
-			fileNameAttributes.ParentDirRecordNumber = ConvertLittleEndianByteSliceToUInt64(attribute.AttributeBytes[offsetParentRecordNumber+nameLengthOffsetModifier : offsetParentRecordNumber+lengthParentRecordNumber+nameLengthOffsetModifier])
-			if fileNameAttributes.ParentDirRecordNumber == 0 {
-				err = errors.Wrap(err, "failed to convert filename attribute's parent dir record number")
-				return
-			}
-
-			fileNameAttributes.ParentDirSequenceNumber = binary.LittleEndian.Uint16(attribute.AttributeBytes[offsetParentDirSequenceNumber+nameLengthOffsetModifier : offsetParentDirSequenceNumber+lengthParentDirSequenceNumber+nameLengthOffsetModifier])
-
-			fileNameAttributes.FnCreated = ParseTimestamp(attribute.AttributeBytes[offsetFnCreated+nameLengthOffsetModifier : offsetFnCreated+lengthFnCreated+nameLengthOffsetModifier])
-			if fileNameAttributes.FnCreated == "" {
-				err = errors.Wrap(err, "could not parse fn created timestamp")
-				return
-			}
-
-			fileNameAttributes.FnModified = ParseTimestamp(attribute.AttributeBytes[offsetFnModified+nameLengthOffsetModifier : offsetFnModified+lengthFnModified+nameLengthOffsetModifier])
-			if fileNameAttributes.FnModified == "" {
-				err = errors.Wrap(err, "could not parse fn modified timestamp")
-				return
-			}
-
-			fileNameAttributes.FnChanged = ParseTimestamp(attribute.AttributeBytes[offsetFnChanged+nameLengthOffsetModifier : offsetFnChanged+lengthFnChanged+nameLengthOffsetModifier])
-			if fileNameAttributes.FnChanged == "" {
-				err = errors.Wrap(err, "could not parse fn changed timestamp")
-				return
-			}
-
-			fileNameAttributes.FnAccessed = ParseTimestamp(attribute.AttributeBytes[offsetFnAccessed+nameLengthOffsetModifier : offsetFnAccessed+lengthFnAccessed+nameLengthOffsetModifier])
-			if fileNameAttributes.FnAccessed == "" {
-				err = errors.Wrap(err, "could not parse fn accessed timestamp")
-				return
-			}
-
-			fileNameAttributes.LogicalFileSize = binary.LittleEndian.Uint64(attribute.AttributeBytes[offsetLogicalFileSize+nameLengthOffsetModifier : offsetLogicalFileSize+lengthLogicalFileSize+nameLengthOffsetModifier])
-
-			fileNameAttributes.PhysicalFileSize = binary.LittleEndian.Uint64(attribute.AttributeBytes[offSetPhysicalFileSize+nameLengthOffsetModifier : offSetPhysicalFileSize+lengthPhysicalFileSize+nameLengthOffsetModifier])
-
-			fnFlags := attribute.AttributeBytes[offsetFnFlags+nameLengthOffsetModifier : offsetFnFlags+lengthFnFlags+nameLengthOffsetModifier]
-			fileNameAttributes.FileNameFlags = resolveFileFlags(fnFlags)
-
-			fileNameAttributes.FileNameLength = attribute.AttributeBytes[offsetFileNameLength+nameLengthOffsetModifier] * 2 // times two to account for unicode characters
-
-			fileNamespaceFlag := attribute.AttributeBytes[offsetFileNameSpace+nameLengthOffsetModifier]
-			switch fileNamespaceFlag {
-			case 0x00:
-				fileNameAttributes.FileNamespace = "POSIX"
-			case 0x01:
-				fileNameAttributes.FileNamespace = "WIN32"
-			case 0x02:
-				fileNameAttributes.FileNamespace = "DOS"
-			case 0x03:
-				fileNameAttributes.FileNamespace = "WIN32 & DOS"
-			default:
-				fileNameAttributes.FileNamespace = ""
-			}
-
-			unicodeFileName := string(attribute.AttributeBytes[offsetFileName+nameLengthOffsetModifier : offsetFileName+fileNameAttributes.FileNameLength+nameLengthOffsetModifier])
-
-			fileNameAttributes.FileName = strings.Replace(unicodeFileName, "\x00", "", -1)
-			mftRecord.FileNameAttributes = append(mftRecord.FileNameAttributes, fileNameAttributes)
-		}
+func (flagResidency *FlagResidency) Parse(byteToCheck byte) {
+	switch byteToCheck {
+	case 0x00:
+		*flagResidency = true
+	default:
+		*flagResidency = false
 	}
 	return
 }
 
-func resolveFileFlags(flagBytes []byte) (parsedFlags FileNameFlags) {
-	unparsedFlags := binary.LittleEndian.Uint32(flagBytes)
+func identifyFileNamespace(fileNamespaceFlag byte) (fileNameSpace string) {
+	switch fileNamespaceFlag {
+	case 0x00:
+		fileNameSpace = "POSIX"
+	case 0x01:
+		fileNameSpace = "WIN32"
+	case 0x02:
+		fileNameSpace = "DOS"
+	case 0x03:
+		fileNameSpace = "WIN32 & DOS"
+	default:
+		fileNameSpace = ""
+	}
 
+	return
+}
+
+func (fileNameFlags *FileNameFlags) Parse(flagBytes []byte) {
+	unparsedFlags := binary.LittleEndian.Uint32(flagBytes)
 	//init values
-	parsedFlags.ReadOnly = false
-	parsedFlags.Hidden = false
-	parsedFlags.System = false
-	parsedFlags.Archive = false
-	parsedFlags.Device = false
-	parsedFlags.Normal = false
-	parsedFlags.Temporary = false
-	parsedFlags.Sparse = false
-	parsedFlags.Reparse = false
-	parsedFlags.Compressed = false
-	parsedFlags.Offline = false
-	parsedFlags.NotContentIndexed = false
-	parsedFlags.Encrypted = false
-	parsedFlags.Directory = false
-	parsedFlags.IndexView = false
+	fileNameFlags.ReadOnly = false
+	fileNameFlags.Hidden = false
+	fileNameFlags.System = false
+	fileNameFlags.Archive = false
+	fileNameFlags.Device = false
+	fileNameFlags.Normal = false
+	fileNameFlags.Temporary = false
+	fileNameFlags.Sparse = false
+	fileNameFlags.Reparse = false
+	fileNameFlags.Compressed = false
+	fileNameFlags.Offline = false
+	fileNameFlags.NotContentIndexed = false
+	fileNameFlags.Encrypted = false
+	fileNameFlags.Directory = false
+	fileNameFlags.IndexView = false
 
 	if unparsedFlags&0x0001 != 0 {
-		parsedFlags.ReadOnly = true
+		fileNameFlags.ReadOnly = true
+
 	}
 	if unparsedFlags&0x0002 != 0 {
-		parsedFlags.Hidden = true
+		fileNameFlags.Hidden = true
 	}
 	if unparsedFlags&0x0004 != 0 {
-		parsedFlags.System = true
-	}
-	if unparsedFlags&0x0010 != 0 {
-		parsedFlags.Directory = true
+		fileNameFlags.System = true
 	}
 	if unparsedFlags&0x0020 != 0 {
-		parsedFlags.Archive = true
+		fileNameFlags.Archive = true
 	}
 	if unparsedFlags&0x0040 != 0 {
-		parsedFlags.Device = true
+		fileNameFlags.Device = true
 	}
 	if unparsedFlags&0x0080 != 0 {
-		parsedFlags.Normal = true
+		fileNameFlags.Normal = true
 	}
 	if unparsedFlags&0x0100 != 0 {
-		parsedFlags.Temporary = true
+		fileNameFlags.Temporary = true
 	}
 	if unparsedFlags&0x0200 != 0 {
-		parsedFlags.Sparse = true
+		fileNameFlags.Sparse = true
 	}
 	if unparsedFlags&0x0400 != 0 {
-		parsedFlags.Reparse = true
+		fileNameFlags.Reparse = true
 	}
 	if unparsedFlags&0x0800 != 0 {
-		parsedFlags.Compressed = true
+		fileNameFlags.Compressed = true
 	}
 	if unparsedFlags&0x1000 != 0 {
-		parsedFlags.Offline = true
+		fileNameFlags.Offline = true
 	}
 	if unparsedFlags&0x2000 != 0 {
-		parsedFlags.NotContentIndexed = true
+		fileNameFlags.NotContentIndexed = true
 	}
 	if unparsedFlags&0x4000 != 0 {
-		parsedFlags.Encrypted = true
+		fileNameFlags.Encrypted = true
 	}
 	if unparsedFlags&0x10000000 != 0 {
-		parsedFlags.Directory = true
+		fileNameFlags.Directory = true
 	}
 	if unparsedFlags&0x20000000 != 0 {
-		parsedFlags.IndexView = true
+		fileNameFlags.IndexView = true
 	}
 	return
 }

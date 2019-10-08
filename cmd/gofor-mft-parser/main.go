@@ -10,7 +10,7 @@
 package main
 
 import (
-	mft "github.com/AlecRandazzo/Gofor-MFT-Parser"
+	"fmt"
 	log "github.com/sirupsen/logrus"
 	"os"
 )
@@ -23,9 +23,25 @@ func init() {
 }
 
 func main() {
-	err := mft.ParseMFT("MFT", "out.csv")
+	outFileName := "out.csv"
+	inFileName := "MFT"
+
+	outFile, err := os.Create(outFileName)
 	if err != nil {
-		log.Fatal(err)
+		err = fmt.Errorf("failed to create output file %s: %w", outFileName, err)
+		return
 	}
+	defer outFile.Close()
+
+	inFile, err := os.Open(inFileName)
+	if err != nil {
+		err = fmt.Errorf("failed to open file %s: %w", inFileName, err)
+		return
+	}
+	defer inFile.Close()
+	//writer := mft.CsvWriter{
+	//	OutStream: outFile,
+	//}
+	//mft.ParseMFT(inFile, writer, 4096)
 
 }

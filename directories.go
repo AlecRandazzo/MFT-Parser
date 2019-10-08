@@ -10,115 +10,121 @@
 package GoFor_MFT_Parser
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"strings"
-	"sync"
 )
 
-type Directory struct {
+type directory struct {
+	RecordNumber       uint64
 	DirectoryName      string
 	ParentRecordNumber uint64
 }
 
-type DirectoryList map[uint64]Directory
+type UnresolvedDirectoryTree map[uint64]directory
 
-type MappedDirectories map[uint64]string
+type DirectoryTree map[uint64]string
 
-// Quickly checks the bytes of an MFT record to determine if it is a Directory or not.
-func (mftRecord *MasterFileTableRecord) QuickDirectoryCheck() {
+// Quickly checks the bytes of an MFT record to determine if it is a directory or not.
+func (rawMftRecord RawMasterFileTableRecord) IsThisADirectory() (result bool, err error) {
 
 	const offsetRecordFlag = 0x16
 	const codeDirectory = 0x03
-	if len(mftRecord.MftRecordBytes) <= offsetRecordFlag {
-		mftRecord.RecordHeader.FlagDirectory = false
+	sizeOfRawMFTRecord := len(rawMftRecord)
+	if sizeOfRawMFTRecord == 0 {
+		result = false
+		err = errors.New("RawMasterFileTableRecord.Parse() received nil bytes ")
 		return
 	}
-	recordFlag := mftRecord.MftRecordBytes[offsetRecordFlag]
+	if sizeOfRawMFTRecord <= offsetRecordFlag {
+		result = false
+		err = errors.New("RawMasterFileTableRecord.Parse() received not enough bytes ")
+		return
+	}
+	recordFlag := rawMftRecord[offsetRecordFlag]
 	if recordFlag == codeDirectory {
-		mftRecord.RecordHeader.FlagDirectory = true
+		result = true
 	} else {
-		mftRecord.RecordHeader.FlagDirectory = false
+		result = false
 	}
 	return
 }
 
-// Creates a list of directories from a channel of MFR record bytes.
-func CreateDirectoryList(inboundBuffer *chan []byte, directoryListChannel *chan map[uint64]Directory, waitGroup *sync.WaitGroup) {
-	defer waitGroup.Done()
-	var openChannel = true
-	var directoryList DirectoryList
-	var err error
-	directoryList = make(map[uint64]Directory)
-	for openChannel == true {
-		var mftRecord MasterFileTableRecord
-		mftRecord.MftRecordBytes, openChannel = <-*inboundBuffer
-		mftRecord.QuickDirectoryCheck()
-		if mftRecord.RecordHeader.FlagDirectory == false {
-			continue
-		}
-		mftRecord.GetRecordHeader()
-
-		err = mftRecord.GetAttributeList()
-		if err != nil {
-			continue
-		}
-
-		err = mftRecord.GetFileNameAttributes()
-		if err != nil {
-			continue
-		}
-		for _, attribute := range mftRecord.FileNameAttributes {
-			if strings.Contains(attribute.FileNamespace, "WIN32") == true || strings.Contains(attribute.FileNamespace, "POSIX") {
-
-				directoryList[uint64(mftRecord.RecordHeader.RecordNumber)] = Directory{DirectoryName: attribute.FileName, ParentRecordNumber: attribute.ParentDirRecordNumber}
-				break
-			}
-		}
+func convertRawMFTRecordToDirectory(rawMftRecord RawMasterFileTableRecord) (directory directory, err error) {
+	result, err := rawMftRecord.IsThisADirectory()
+	if result == false {
+		err = errors.New("this is not a directory")
+		return
 	}
-	*directoryListChannel <- directoryList
+	rawRecordHeader, err := rawMftRecord.GetRawRecordHeader()
+	if err != nil {
+		err = fmt.Errorf("failed to parse get record header: %v", err)
+		return
+	}
+	recordHeader, _ := rawRecordHeader.Parse()
+
+	rawAttributes, err := rawMftRecord.GetRawAttributes(recordHeader)
+	if err != nil {
+		err = fmt.Errorf("failed to get raw attributes: %v", err)
+		return
+	}
+	doesntMatter := int64(4096)
+	fileNameAttributes, _, _, err := rawAttributes.Parse(doesntMatter)
+	for _, fileNameAttribute := range fileNameAttributes {
+		if strings.Contains(fileNameAttribute.FileNamespace, "WIN32") == true || strings.Contains(fileNameAttribute.FileNamespace, "POSIX") {
+			directory.RecordNumber = uint64(recordHeader.RecordNumber)
+			directory.DirectoryName = fileNameAttribute.FileName
+			directory.ParentRecordNumber = fileNameAttribute.ParentDirRecordNumber
+		}
+		break
+	}
 	return
 }
 
-// Combines a running list of directories from a channel in order to create the systems Directory trees.
-func (file *MftFile) CombineDirectoryInformation(directoryListChannel *chan map[uint64]Directory, waitForDirectoryCombination *sync.WaitGroup) {
-	defer waitForDirectoryCombination.Done()
-
-	file.MappedDirectories = make(map[uint64]string)
-
-	// Merge lists
-	var masterDirectoryList map[uint64]Directory
-	masterDirectoryList = make(map[uint64]Directory)
-	openChannel := true
-
-	for openChannel == true {
-		var directoryList map[uint64]Directory
-		directoryList = make(map[uint64]Directory)
-		directoryList, openChannel = <-*directoryListChannel
-		for key, value := range directoryList {
-			masterDirectoryList[key] = value
+func BuildUnresolvedDirectoryTree(reader io.Reader) (unresolvedDirectoryTree UnresolvedDirectoryTree, err error) {
+	unresolvedDirectoryTree = make(UnresolvedDirectoryTree)
+	for {
+		buffer := make(RawMasterFileTableRecord, 1024)
+		_, err = reader.Read(buffer)
+		if err == io.EOF {
+			err = nil
+			break
 		}
+
+		directory, err := convertRawMFTRecordToDirectory(buffer)
+		if err != nil {
+			continue
+		}
+		unresolvedDirectoryTree[directory.RecordNumber] = directory
 	}
 
-	for recordNumber, directoryMetadata := range masterDirectoryList {
+	return
+}
+
+// Combines a running list of directories from a channel in order to create the systems directory trees.
+func (unresolvedDirectoryTree UnresolvedDirectoryTree) resolve() (directoryTree DirectoryTree) {
+	directoryTree = make(DirectoryTree)
+	for recordNumber, directoryMetadata := range unresolvedDirectoryTree {
 		mappingDirectory := directoryMetadata.DirectoryName
 		parentRecordNumberPointer := directoryMetadata.ParentRecordNumber
 		for {
-			if _, ok := masterDirectoryList[parentRecordNumberPointer]; ok {
+			if _, ok := unresolvedDirectoryTree[parentRecordNumberPointer]; ok {
 				if recordNumber == 5 {
-					mappingDirectory = ":\\"
-					file.MappedDirectories[recordNumber] = mappingDirectory
+					mappingDirectory = "\\"
+					directoryTree[recordNumber] = mappingDirectory
 					break
 				}
 				if parentRecordNumberPointer == 5 {
-					mappingDirectory = ":\\" + mappingDirectory
-					file.MappedDirectories[recordNumber] = mappingDirectory
+					mappingDirectory = "\\" + mappingDirectory
+					directoryTree[recordNumber] = mappingDirectory
 					break
 				}
-				mappingDirectory = masterDirectoryList[parentRecordNumberPointer].DirectoryName + "\\" + mappingDirectory
-				parentRecordNumberPointer = masterDirectoryList[parentRecordNumberPointer].ParentRecordNumber
+				mappingDirectory = unresolvedDirectoryTree[parentRecordNumberPointer].DirectoryName + "\\" + mappingDirectory
+				parentRecordNumberPointer = unresolvedDirectoryTree[parentRecordNumberPointer].ParentRecordNumber
 				continue
 			}
-			file.MappedDirectories[recordNumber] = "$ORPHANFILE\\" + mappingDirectory
+			directoryTree[recordNumber] = "$ORPHANFILE\\" + mappingDirectory
 			break
 		}
 	}
@@ -126,34 +132,9 @@ func (file *MftFile) CombineDirectoryInformation(directoryListChannel *chan map[
 }
 
 // Builds a list of directories for the purpose of of mapping MFT records to their parent directories.
-func (file *MftFile) BuildDirectoryTree() (err error) {
-	var waitGroup sync.WaitGroup
-	bufferChannel := make(chan []byte, 100)
-	numberOfWorkers := 4
-	directoryListChannel := make(chan map[uint64]Directory, numberOfWorkers)
-	for i := 0; i <= numberOfWorkers; i++ {
-		waitGroup.Add(1)
-		go CreateDirectoryList(&bufferChannel, &directoryListChannel, &waitGroup)
-	}
-
-	var waitForDirectoryCombination sync.WaitGroup
-	waitForDirectoryCombination.Add(1)
-	go file.CombineDirectoryInformation(&directoryListChannel, &waitForDirectoryCombination)
-	var offset int64 = 0
-	for {
-		buffer := make([]byte, 1024)
-		_, err = file.FileHandle.ReadAt(buffer, offset)
-		if err == io.EOF {
-			err = nil
-			break
-		}
-		bufferChannel <- buffer
-		offset += 1024
-	}
-
-	close(bufferChannel)
-	waitGroup.Wait()
-	close(directoryListChannel)
-	waitForDirectoryCombination.Wait()
+func BuildDirectoryTree(reader io.Reader) (directoryTree DirectoryTree, err error) {
+	directoryTree = make(DirectoryTree)
+	unresolvedDirectoryTree, _ := BuildUnresolvedDirectoryTree(reader)
+	directoryTree = unresolvedDirectoryTree.resolve()
 	return
 }

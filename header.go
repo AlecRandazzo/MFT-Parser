@@ -9,46 +9,128 @@
 
 package GoFor_MFT_Parser
 
-import "encoding/binary"
+import (
+	"errors"
+	"fmt"
+	bin "github.com/AlecRandazzo/BinaryTransforms"
+)
+
+type RawRecordHeader []byte
 
 type RecordHeader struct {
 	AttributesOffset uint16
 	RecordNumber     uint32
-	FlagDeleted      bool
-	FlagDirectory    bool
+	Flags            RecordHeaderFlags
 }
 
-func (mftRecord *MasterFileTableRecord) GetRecordHeader() {
-	const offsetAttributesOffset = 0x14
+type RawRecordHeaderFlag byte
 
-	const offsetRecordNumber = 0x2c
+type RecordHeaderFlags struct {
+	FlagDeleted   bool
+	FlagDirectory bool
+}
+
+func (rawRecordHeader RawRecordHeader) Parse() (recordHeader RecordHeader, err error) {
+	sizeOfRawRecordHeader := len(rawRecordHeader)
+
+	if sizeOfRawRecordHeader == 0 {
+		err = errors.New("RecordHeader.Parse() received nil bytes")
+		return
+	} else if sizeOfRawRecordHeader != 0x38 {
+		err = fmt.Errorf("RawRecordHeader.Parse() expected 38 bytes, instead it received %v", sizeOfRawRecordHeader)
+		return
+	}
+
+	const offsetAttributesOffset = 0x14
+	const offsetRecordNumber = 0x2C
 	const lengthRecordNumber = 0x04
 
-	mftRecord.RecordHeader.AttributesOffset = uint16(mftRecord.MftRecordBytes[offsetAttributesOffset])
+	recordHeader.AttributesOffset = uint16(rawRecordHeader[offsetAttributesOffset])
+	rawRecordHeaderFlag, _ := rawRecordHeader.GetRawRecordHeaderFlags()
 
-	mftRecord.getHeaderFlags()
-
-	valueRecordNumber := mftRecord.MftRecordBytes[offsetRecordNumber : offsetRecordNumber+lengthRecordNumber]
-	mftRecord.RecordHeader.RecordNumber = binary.LittleEndian.Uint32(valueRecordNumber)
+	recordHeader.Flags = rawRecordHeaderFlag.Parse()
+	recordHeader.RecordNumber, _ = bin.LittleEndianBinaryToUInt32(rawRecordHeader[offsetRecordNumber : offsetRecordNumber+lengthRecordNumber])
 	return
 }
 
-func (mftRecord *MasterFileTableRecord) getHeaderFlags() {
+func (rawRecordHeader RawRecordHeader) GetRawRecordHeaderFlags() (rawRecordHeaderFlag RawRecordHeaderFlag, err error) {
+	sizeOfRawRecordHeader := len(rawRecordHeader)
+
+	if sizeOfRawRecordHeader == 0 {
+		err = errors.New("received a nil bytes")
+		return
+	} else if sizeOfRawRecordHeader < 0x16 {
+		err = fmt.Errorf("expected at least 16 bytes, instead received %v", sizeOfRawRecordHeader)
+		return
+	}
+
 	const offsetRecordFlag = 0x16
+	rawRecordHeaderFlag = RawRecordHeaderFlag(rawRecordHeader[offsetRecordFlag])
+
+	return
+}
+
+func (rawRecordHeaderFlag RawRecordHeaderFlag) Parse() (recordHeaderFlags RecordHeaderFlags) {
 	const codeDeletedFile = 0x00
 	//const codeActiveFile = 0x01
 	//const codeDeletedDirectory = 0x02
 	const codeDirectory = 0x03
-	recordFlag := mftRecord.MftRecordBytes[offsetRecordFlag]
-	if recordFlag == codeDeletedFile {
-		mftRecord.RecordHeader.FlagDeleted = true
-		mftRecord.RecordHeader.FlagDirectory = false
-	} else if recordFlag == codeDirectory {
-		mftRecord.RecordHeader.FlagDirectory = true
-		mftRecord.RecordHeader.FlagDeleted = false
+	if rawRecordHeaderFlag == codeDeletedFile {
+		recordHeaderFlags.FlagDeleted = true
+		recordHeaderFlags.FlagDirectory = false
+	} else if rawRecordHeaderFlag == codeDirectory {
+		recordHeaderFlags.FlagDirectory = true
+		recordHeaderFlags.FlagDeleted = false
 	} else {
-		mftRecord.RecordHeader.FlagDeleted = false
-		mftRecord.RecordHeader.FlagDirectory = false
+		recordHeaderFlags.FlagDeleted = false
+		recordHeaderFlags.FlagDirectory = false
 	}
+	return
+}
+
+func (rawMftRecord RawMasterFileTableRecord) GetRawRecordHeader() (rawRecordHeader RawRecordHeader, err error) {
+	sizeOfRawMftRecord := len(rawMftRecord)
+	if sizeOfRawMftRecord == 0 {
+		err = errors.New("received nil bytes")
+		return
+	} else if sizeOfRawMftRecord < 0x38 {
+		err = fmt.Errorf("expected at least 38 bytes, instead received %v", sizeOfRawMftRecord)
+		return
+	}
+
+	result, _ := rawMftRecord.IsThisAnMftRecord()
+	if result == false {
+		err = errors.New("this is not an mft record")
+		return
+	}
+
+	sizeOfRawRecordHeader := len(rawMftRecord[0:0x38])
+	rawRecordHeader = make(RawRecordHeader, sizeOfRawRecordHeader)
+	copy(rawRecordHeader, rawMftRecord[0:0x38])
+	return
+}
+
+func (rawMftRecord RawMasterFileTableRecord) IsThisAnMftRecord() (result bool, err error) {
+	sizeOfRawMftRecord := len(rawMftRecord)
+
+	if sizeOfRawMftRecord == 0 {
+		err = errors.New("received nil bytes")
+		result = false
+		return
+	}
+	if sizeOfRawMftRecord < 0x05 {
+		err = errors.New("received less than 4 bytes")
+		result = false
+		return
+	}
+
+	const offsetRecordMagicNumber = 0x00
+	const lengthRecordMagicNumber = 0x05
+	magicNumber := string(rawMftRecord[offsetRecordMagicNumber : offsetRecordMagicNumber+lengthRecordMagicNumber])
+	if magicNumber != "FILE0" {
+		result = false
+		return
+	}
+	result = true
 	return
 }
