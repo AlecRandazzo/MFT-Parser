@@ -23,14 +23,14 @@ func TestRawFileNameAttribute_Parse(t *testing.T) {
 				FnModified:   time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
 				FnAccessed:   time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
 				FnChanged:    time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
-				FlagResident: true,
-				NameLength: NameLength{
-					FlagNamed: false,
-					NamedSize: 0,
+				flagResident: true,
+				nameLength: nameLength{
+					flagNamed: false,
+					namedSize: 0,
 				},
-				AttributeSize:           104,
-				ParentDirRecordNumber:   5,
-				ParentDirSequenceNumber: 0,
+				attributeSize:           104,
+				parentDirRecordNumber:   5,
+				parentDirSequenceNumber: 0,
 				LogicalFileSize:         16384,
 				PhysicalFileSize:        16384,
 				FileNameFlags: FileNameFlags{
@@ -50,8 +50,8 @@ func TestRawFileNameAttribute_Parse(t *testing.T) {
 					Directory:         false,
 					IndexView:         false,
 				},
-				FileNameLength: 8,
-				FileNamespace:  "WIN32 & DOS",
+				fileNameLength: 8,
+				fileNamespace:  "WIN32 & DOS",
 				FileName:       "$MFT",
 			},
 		},
@@ -79,20 +79,15 @@ func TestRawFileNameAttribute_Parse(t *testing.T) {
 }
 
 func TestFileNameFlags_Parse(t *testing.T) {
-	type args struct {
-		flagBytes []byte
-	}
 	tests := []struct {
-		name string
-		got  FileNameFlags
-		args args
-		want FileNameFlags
+		name             string
+		got              FileNameFlags
+		rawFilenameFlags RawFilenameFlags
+		want             FileNameFlags
 	}{
 		{
-			name: "flag test 1",
-			args: args{
-				flagBytes: []byte{6, 0, 0, 0},
-			},
+			name:             "flag test 1",
+			rawFilenameFlags: []byte{6, 0, 0, 0},
 			want: FileNameFlags{
 				ReadOnly:          false,
 				Hidden:            true,
@@ -112,10 +107,8 @@ func TestFileNameFlags_Parse(t *testing.T) {
 			},
 		},
 		{
-			name: "flag test 2",
-			args: args{
-				flagBytes: []byte{1, 0, 0, 16},
-			},
+			name:             "flag test 2",
+			rawFilenameFlags: []byte{1, 0, 0, 16},
 			want: FileNameFlags{
 				ReadOnly:          true,
 				Hidden:            false,
@@ -135,10 +128,8 @@ func TestFileNameFlags_Parse(t *testing.T) {
 			},
 		},
 		{
-			name: "flag test 3",
-			args: args{
-				flagBytes: []byte{32, 0, 0, 0},
-			},
+			name:             "flag test 3",
+			rawFilenameFlags: []byte{32, 0, 0, 0},
 			want: FileNameFlags{
 				ReadOnly:          false,
 				Hidden:            false,
@@ -158,10 +149,8 @@ func TestFileNameFlags_Parse(t *testing.T) {
 			},
 		},
 		{
-			name: "flag test 4",
-			args: args{
-				flagBytes: []byte{32, 33, 0, 0},
-			},
+			name:             "flag test 4",
+			rawFilenameFlags: []byte{32, 33, 0, 0},
 			want: FileNameFlags{
 				ReadOnly:          false,
 				Hidden:            false,
@@ -181,10 +170,8 @@ func TestFileNameFlags_Parse(t *testing.T) {
 			},
 		},
 		{
-			name: "flag test 5",
-			args: args{
-				flagBytes: []byte{32, 6, 0, 0},
-			},
+			name:             "flag test 5",
+			rawFilenameFlags: []byte{32, 6, 0, 0},
 			want: FileNameFlags{
 				ReadOnly:          false,
 				Hidden:            false,
@@ -204,10 +191,8 @@ func TestFileNameFlags_Parse(t *testing.T) {
 			},
 		},
 		{
-			name: "flag test 6",
-			args: args{
-				flagBytes: []byte{6, 36, 0, 16},
-			},
+			name:             "flag test 6",
+			rawFilenameFlags: []byte{6, 36, 0, 16},
 			want: FileNameFlags{
 				ReadOnly:          false,
 				Hidden:            true,
@@ -227,10 +212,8 @@ func TestFileNameFlags_Parse(t *testing.T) {
 			},
 		},
 		{
-			name: "flag test 7",
-			args: args{
-				flagBytes: []byte{0, 8, 0, 16},
-			},
+			name:             "flag test 7",
+			rawFilenameFlags: []byte{0, 8, 0, 16},
 			want: FileNameFlags{
 				ReadOnly:          false,
 				Hidden:            false,
@@ -250,10 +233,8 @@ func TestFileNameFlags_Parse(t *testing.T) {
 			},
 		},
 		{
-			name: "flag test 8",
-			args: args{
-				flagBytes: []byte{32, 18, 64, 0},
-			},
+			name:             "flag test 8",
+			rawFilenameFlags: []byte{32, 18, 64, 0},
 			want: FileNameFlags{
 				ReadOnly:          false,
 				Hidden:            false,
@@ -273,10 +254,8 @@ func TestFileNameFlags_Parse(t *testing.T) {
 			},
 		},
 		{
-			name: "flag test 9",
-			args: args{
-				flagBytes: []byte{0, 32, 0, 16},
-			},
+			name:             "flag test 9",
+			rawFilenameFlags: []byte{0, 32, 0, 16},
 			want: FileNameFlags{
 				ReadOnly:          false,
 				Hidden:            false,
@@ -296,10 +275,8 @@ func TestFileNameFlags_Parse(t *testing.T) {
 			},
 		},
 		{
-			name: "flag test 10",
-			args: args{
-				flagBytes: []byte{0, 0, 0, 16},
-			},
+			name:             "flag test 10",
+			rawFilenameFlags: []byte{0, 0, 0, 16},
 			want: FileNameFlags{
 				ReadOnly:          false,
 				Hidden:            false,
@@ -319,10 +296,8 @@ func TestFileNameFlags_Parse(t *testing.T) {
 			},
 		},
 		{
-			name: "flag test 10",
-			args: args{
-				flagBytes: []byte{38, 0, 0, 32},
-			},
+			name:             "flag test 10",
+			rawFilenameFlags: []byte{38, 0, 0, 32},
 			want: FileNameFlags{
 				ReadOnly:          false,
 				Hidden:            true,
@@ -342,10 +317,8 @@ func TestFileNameFlags_Parse(t *testing.T) {
 			},
 		},
 		{
-			name: "flag test 11",
-			args: args{
-				flagBytes: []byte{0x40, 0x40, 0x10, 0x10},
-			},
+			name:             "flag test 11",
+			rawFilenameFlags: []byte{0x40, 0x40, 0x10, 0x10},
 			want: FileNameFlags{
 				ReadOnly:          false,
 				Hidden:            false,
@@ -365,10 +338,8 @@ func TestFileNameFlags_Parse(t *testing.T) {
 			},
 		},
 		{
-			name: "flag test 12",
-			args: args{
-				flagBytes: []byte{0x80, 0x00, 0x00, 0x00},
-			},
+			name:             "flag test 12",
+			rawFilenameFlags: []byte{0x80, 0x00, 0x00, 0x00},
 			want: FileNameFlags{
 				ReadOnly:          false,
 				Hidden:            false,
@@ -390,7 +361,7 @@ func TestFileNameFlags_Parse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.got.Parse(tt.args.flagBytes)
+			tt.got = tt.rawFilenameFlags.Parse()
 			if !reflect.DeepEqual(tt.got, tt.want) {
 				t.Errorf("Test %v failed \ngot = %v, \nwant = %v", tt.name, tt.got, tt.want)
 			}
@@ -404,7 +375,7 @@ func TestFlagResidency_Parse(t *testing.T) {
 	}
 	tests := []struct {
 		name          string
-		flagResidency FlagResidency
+		flagResidency flagResidency
 		args          args
 	}{
 		{},
@@ -416,44 +387,41 @@ func TestFlagResidency_Parse(t *testing.T) {
 }
 
 func Test_identifyFileNamespace(t *testing.T) {
-	type args struct {
-		fileNamespaceFlag byte
-	}
 	tests := []struct {
-		name              string
-		args              args
-		wantFileNameSpace string
+		name                     string
+		rawFilenameNameSpaceFlag RawFilenameNameSpaceFlag
+		wantFileNameSpace        string
 	}{
 		{
-			name:              "POSIX",
-			args:              args{fileNamespaceFlag: 0x00},
-			wantFileNameSpace: "POSIX",
+			name:                     "POSIX",
+			rawFilenameNameSpaceFlag: 0x00,
+			wantFileNameSpace:        "POSIX",
 		},
 		{
-			name:              "WIN32",
-			args:              args{fileNamespaceFlag: 0x01},
-			wantFileNameSpace: "WIN32",
+			name:                     "WIN32",
+			rawFilenameNameSpaceFlag: 0x01,
+			wantFileNameSpace:        "WIN32",
 		},
 		{
-			name:              "DOS",
-			args:              args{fileNamespaceFlag: 0x02},
-			wantFileNameSpace: "DOS",
+			name:                     "DOS",
+			rawFilenameNameSpaceFlag: 0x02,
+			wantFileNameSpace:        "DOS",
 		},
 		{
-			name:              "WIN32 & DOS",
-			args:              args{fileNamespaceFlag: 0x03},
-			wantFileNameSpace: "WIN32 & DOS",
+			name:                     "WIN32 & DOS",
+			rawFilenameNameSpaceFlag: 0x03,
+			wantFileNameSpace:        "WIN32 & DOS",
 		},
 		{
-			name:              "null",
-			args:              args{fileNamespaceFlag: 0x04},
-			wantFileNameSpace: "",
+			name:                     "null",
+			rawFilenameNameSpaceFlag: 0x04,
+			wantFileNameSpace:        "",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if gotFileNameSpace := identifyFileNamespace(tt.args.fileNamespaceFlag); gotFileNameSpace != tt.wantFileNameSpace {
-				t.Errorf("identifyFileNamespace() = %v, want %v", gotFileNameSpace, tt.wantFileNameSpace)
+			if gotFileNameSpace := tt.rawFilenameNameSpaceFlag.Parse(); gotFileNameSpace != tt.wantFileNameSpace {
+				t.Errorf("Parse() = %v, want %v", gotFileNameSpace, tt.wantFileNameSpace)
 			}
 		})
 	}

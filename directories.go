@@ -17,31 +17,35 @@ import (
 )
 
 type directory struct {
-	RecordNumber       uint64
-	DirectoryName      string
-	ParentRecordNumber uint64
+	recordNumber       uint64
+	directoryName      string
+	parentRecordNumber uint64
 }
 
+// Contains a slice of directories that need to be joined to create a directory tree.
 type UnresolvedDirectoryTree map[uint64]directory
 
+// Contains a directory tree.
 type DirectoryTree map[uint64]string
 
 // Quickly checks the bytes of an MFT record to determine if it is a directory or not.
 func (rawMftRecord RawMasterFileTableRecord) IsThisADirectory() (result bool, err error) {
-
+	// Sanity checks that the method received good data
 	const offsetRecordFlag = 0x16
 	const codeDirectory = 0x03
 	sizeOfRawMFTRecord := len(rawMftRecord)
 	if sizeOfRawMFTRecord == 0 {
 		result = false
-		err = errors.New("RawMasterFileTableRecord.Parse() received nil bytes ")
+		err = errors.New("RawMasterFileTableRecord.IsThisADirectory() received nil bytes ")
 		return
 	}
 	if sizeOfRawMFTRecord <= offsetRecordFlag {
 		result = false
-		err = errors.New("RawMasterFileTableRecord.Parse() received not enough bytes ")
+		err = errors.New("RawMasterFileTableRecord.IsThisADirectory() received not enough bytes ")
 		return
 	}
+
+	// Skip straight to the offset where the directory flag resides and check if it has the directory flag or not.
 	recordFlag := rawMftRecord[offsetRecordFlag]
 	if recordFlag == codeDirectory {
 		result = true
@@ -52,36 +56,45 @@ func (rawMftRecord RawMasterFileTableRecord) IsThisADirectory() (result bool, er
 }
 
 func convertRawMFTRecordToDirectory(rawMftRecord RawMasterFileTableRecord) (directory directory, err error) {
+	// Sanity checks that the raw mft record is a directory or not
 	result, err := rawMftRecord.IsThisADirectory()
 	if result == false {
 		err = errors.New("this is not a directory")
 		return
 	}
+
+	// Get record header bytes
 	rawRecordHeader, err := rawMftRecord.GetRawRecordHeader()
 	if err != nil {
 		err = fmt.Errorf("failed to parse get record header: %v", err)
 		return
 	}
+
+	// Parse the raw record header
 	recordHeader, _ := rawRecordHeader.Parse()
 
+	// Get the raw mft attributes
 	rawAttributes, err := rawMftRecord.GetRawAttributes(recordHeader)
 	if err != nil {
 		err = fmt.Errorf("failed to get raw attributes: %v", err)
 		return
 	}
 	doesntMatter := int64(4096)
+
+	// Find the filename attribute and parse it for its record number, directory name, and parent record number.
 	fileNameAttributes, _, _, err := rawAttributes.Parse(doesntMatter)
 	for _, fileNameAttribute := range fileNameAttributes {
-		if strings.Contains(fileNameAttribute.FileNamespace, "WIN32") == true || strings.Contains(fileNameAttribute.FileNamespace, "POSIX") {
-			directory.RecordNumber = uint64(recordHeader.RecordNumber)
-			directory.DirectoryName = fileNameAttribute.FileName
-			directory.ParentRecordNumber = fileNameAttribute.ParentDirRecordNumber
+		if strings.Contains(fileNameAttribute.fileNamespace, "WIN32") == true || strings.Contains(fileNameAttribute.fileNamespace, "POSIX") {
+			directory.recordNumber = uint64(recordHeader.RecordNumber)
+			directory.directoryName = fileNameAttribute.FileName
+			directory.parentRecordNumber = fileNameAttribute.parentDirRecordNumber
 		}
 		break
 	}
 	return
 }
 
+// Takes an MFT and does a first pass to find all the directories listed in it. These will form an unresolved directory tree that need to be stitched together.
 func BuildUnresolvedDirectoryTree(reader io.Reader) (unresolvedDirectoryTree UnresolvedDirectoryTree, err error) {
 	unresolvedDirectoryTree = make(UnresolvedDirectoryTree)
 	for {
@@ -96,7 +109,7 @@ func BuildUnresolvedDirectoryTree(reader io.Reader) (unresolvedDirectoryTree Unr
 		if err != nil {
 			continue
 		}
-		unresolvedDirectoryTree[directory.RecordNumber] = directory
+		unresolvedDirectoryTree[directory.recordNumber] = directory
 	}
 
 	return
@@ -106,8 +119,8 @@ func BuildUnresolvedDirectoryTree(reader io.Reader) (unresolvedDirectoryTree Unr
 func (unresolvedDirectoryTree UnresolvedDirectoryTree) resolve() (directoryTree DirectoryTree) {
 	directoryTree = make(DirectoryTree)
 	for recordNumber, directoryMetadata := range unresolvedDirectoryTree {
-		mappingDirectory := directoryMetadata.DirectoryName
-		parentRecordNumberPointer := directoryMetadata.ParentRecordNumber
+		mappingDirectory := directoryMetadata.directoryName
+		parentRecordNumberPointer := directoryMetadata.parentRecordNumber
 		for {
 			if _, ok := unresolvedDirectoryTree[parentRecordNumberPointer]; ok {
 				if recordNumber == 5 {
@@ -120,8 +133,8 @@ func (unresolvedDirectoryTree UnresolvedDirectoryTree) resolve() (directoryTree 
 					directoryTree[recordNumber] = mappingDirectory
 					break
 				}
-				mappingDirectory = unresolvedDirectoryTree[parentRecordNumberPointer].DirectoryName + "\\" + mappingDirectory
-				parentRecordNumberPointer = unresolvedDirectoryTree[parentRecordNumberPointer].ParentRecordNumber
+				mappingDirectory = unresolvedDirectoryTree[parentRecordNumberPointer].directoryName + "\\" + mappingDirectory
+				parentRecordNumberPointer = unresolvedDirectoryTree[parentRecordNumberPointer].parentRecordNumber
 				continue
 			}
 			directoryTree[recordNumber] = "$ORPHANFILE\\" + mappingDirectory
@@ -131,7 +144,7 @@ func (unresolvedDirectoryTree UnresolvedDirectoryTree) resolve() (directoryTree 
 	return
 }
 
-// Builds a list of directories for the purpose of of mapping MFT records to their parent directories.
+// Takes an MFT and creates a directory tree where the slice keys are the mft record number of the directory. This record number is importable because files will reference it as its parent mft record number.
 func BuildDirectoryTree(reader io.Reader) (directoryTree DirectoryTree, err error) {
 	directoryTree = make(DirectoryTree)
 	unresolvedDirectoryTree, _ := BuildUnresolvedDirectoryTree(reader)

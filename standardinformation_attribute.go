@@ -15,16 +15,19 @@ import (
 	"time"
 )
 
+// []byte alias for raw standard information attribute. Used with the Parse() method.
 type RawStandardInformationAttribute []byte
 
+// Contains information from a parsed standard information attribute.
 type StandardInformationAttribute struct {
 	SiCreated    time.Time
 	SiModified   time.Time
 	SiAccessed   time.Time
 	SiChanged    time.Time
-	FlagResident FlagResidency
+	FlagResident bool
 }
 
+// Parses the raw standard information attribute receiver and returns a parsed standard information attribute.
 func (rawStandardInformationAttribute RawStandardInformationAttribute) Parse() (standardInformationAttribute StandardInformationAttribute, err error) {
 	const offsetResidentFlag = 0x08
 
@@ -42,17 +45,18 @@ func (rawStandardInformationAttribute RawStandardInformationAttribute) Parse() (
 
 	// The standard information Attribute has a minimum length of 0x30
 	if len(rawStandardInformationAttribute) < 0x30 {
-		err = errors.New("StandardInformationAttributes.Parse() received invalid bytes")
+		err = errors.New("StandardInformationAttributes.parse() received invalid bytes")
 		return
 	}
 	// Check to see if the standard information Attribute is resident to the MFT or not
-	standardInformationAttribute.FlagResident.Parse(rawStandardInformationAttribute[offsetResidentFlag])
+	rawResidencyFlag := RawResidencyFlag(rawStandardInformationAttribute[offsetResidentFlag])
+	standardInformationAttribute.FlagResident = rawResidencyFlag.Parse()
 	if standardInformationAttribute.FlagResident == false {
 		err = errors.New("non resident standard information flag found")
 		return
 	}
 
-	// Parse timestamps
+	// parse timestamps
 	rawSiCreated := ts.RawTimestamp(rawStandardInformationAttribute[offsetSiCreated : offsetSiCreated+lengthSiCreated])
 	rawSiModified := ts.RawTimestamp(rawStandardInformationAttribute[offsetSiModified : offsetSiModified+lengthSiModified])
 	rawSiChanged := ts.RawTimestamp(rawStandardInformationAttribute[offsetSiChanged : offsetSiChanged+lengthSiChanged])

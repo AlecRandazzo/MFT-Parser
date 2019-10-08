@@ -313,22 +313,22 @@ func TestRawResidentDataAttribute_Parse(t *testing.T) {
 func Test_RawDataRunSplitByte_Parse(t *testing.T) {
 	tests := []struct {
 		name                string
-		got                 DataRunSplit
-		want                DataRunSplit
-		rawDataRunSplitByte RawDataRunSplitByte
+		got                 dataRunSplit
+		want                dataRunSplit
+		rawDataRunSplitByte rawDataRunSplitByte
 	}{
 		{
 			name:                "Split 0x33",
-			rawDataRunSplitByte: RawDataRunSplitByte(byte(0x33)),
-			want: DataRunSplit{
+			rawDataRunSplitByte: rawDataRunSplitByte(byte(0x33)),
+			want: dataRunSplit{
 				offsetByteCount: 3,
 				lengthByteCount: 3,
 			},
 		},
 		{
 			name:                "Split 0x04",
-			rawDataRunSplitByte: RawDataRunSplitByte(byte(0x04)),
-			want: DataRunSplit{
+			rawDataRunSplitByte: rawDataRunSplitByte(byte(0x04)),
+			want: dataRunSplit{
 				offsetByteCount: 0,
 				lengthByteCount: 4,
 			},
@@ -336,7 +336,7 @@ func Test_RawDataRunSplitByte_Parse(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.got = tt.rawDataRunSplitByte.Parse()
+			tt.got = tt.rawDataRunSplitByte.parse()
 			if !reflect.DeepEqual(tt.got, tt.want) {
 				t.Errorf("Test %v failed \ngot = %v, \nwant = %v", tt.name, tt.got, tt.want)
 			}

@@ -20,6 +20,7 @@ import (
 	"time"
 )
 
+// Contains information on a parsed MFT record
 type MasterFileTableRecord struct {
 	RecordHeader                  RecordHeader
 	StandardInformationAttributes StandardInformationAttribute
@@ -28,6 +29,8 @@ type MasterFileTableRecord struct {
 }
 
 //TODO fill out these tags for json, csv, bson, and protobuf
+
+// Contains a downselected list of fields that are actually valuable to an analyst. This is the data that is written after parsing an MFT.
 type UsefulMftFields struct {
 	RecordNumber     uint32    `json:"RecordNumber,number"`
 	FilePath         string    `json:"FilePath,string"`
@@ -49,22 +52,24 @@ type UsefulMftFields struct {
 	PhysicalFileSize uint64    `json:"PhysicalFileSize,number"`
 }
 
+// []byte alias for raw mft record. Used with the Parse() method.
 type RawMasterFileTableRecord []byte
 
-// Parse an already extracted MFT and write the results to a file.
-func ParseMFT(fileHandle *os.File, writer ResultWriter, streamer io.Writer, bytesPerCluster int64) {
-	directoryTree, _ := BuildDirectoryTree(fileHandle)
+// Takes an input file os.File and writes the results to the io.Writer. The format of the data sent to the io.Writer is dependent on what ResultWriter is used. The bytes per cluster input is typically 4096
+func ParseMFT(inputFile *os.File, writer ResultWriter, streamer io.Writer, bytesPerCluster int64) {
+	directoryTree, _ := BuildDirectoryTree(inputFile)
 	outputChannel := make(chan UsefulMftFields, 100)
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(1)
 	go writer.ResultWriter(streamer, &outputChannel, &waitGroup)
 	// Seek back to the beginning of the file
-	_, _ = fileHandle.Seek(0, 0)
-	ParseMftRecords(fileHandle, bytesPerCluster, directoryTree, &outputChannel)
+	_, _ = inputFile.Seek(0, 0)
+	ParseMftRecords(inputFile, bytesPerCluster, directoryTree, &outputChannel)
 	waitGroup.Wait()
 	return
 }
 
+// Parses a stream of mft record bytes and sends the results to an output channel. Records from this output channel are popped off by the ResultWriter used in the ParseMFT() method.
 func ParseMftRecords(reader io.Reader, bytesPerCluster int64, directoryTree DirectoryTree, outputChannel *chan UsefulMftFields) {
 	for {
 		buffer := make([]byte, 1024)
@@ -87,10 +92,11 @@ func ParseMftRecords(reader io.Reader, bytesPerCluster int64, directoryTree Dire
 	return
 }
 
+// This method will pull out and return just the MFT record fields that are useful to an analyst.
 func GetUsefulMftFields(mftRecord MasterFileTableRecord, directoryTree DirectoryTree) (useFulMftFields UsefulMftFields) {
 	for _, record := range mftRecord.FileNameAttributes {
-		if strings.Contains(record.FileNamespace, "WIN32") || strings.Contains(record.FileNamespace, "POSIX") {
-			if directory, ok := directoryTree[record.ParentDirRecordNumber]; ok {
+		if strings.Contains(record.fileNamespace, "WIN32") || strings.Contains(record.fileNamespace, "POSIX") {
+			if directory, ok := directoryTree[record.parentDirRecordNumber]; ok {
 				useFulMftFields.FileName = record.FileName
 				useFulMftFields.FilePath = directory
 				useFulMftFields.FullPath = useFulMftFields.FilePath + useFulMftFields.FileName
@@ -121,7 +127,7 @@ func GetUsefulMftFields(mftRecord MasterFileTableRecord, directoryTree Directory
 	return
 }
 
-// Parse the bytes of an MFT record
+// Parses the raw MFT record receiver and returns a parsed mft record.
 func (rawMftRecord RawMasterFileTableRecord) Parse(bytesPerCluster int64) (mftRecord MasterFileTableRecord, err error) {
 	// Sanity checks
 	sizeOfRawMftRecord := len(rawMftRecord)
