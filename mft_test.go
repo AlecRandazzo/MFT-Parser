@@ -2,10 +2,10 @@ package GoFor_MFT_Parser
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/google/go-cmp/cmp"
 	"io"
 	"os"
+	"path/filepath"
 	"reflect"
 	"sync"
 	"testing"
@@ -585,7 +585,7 @@ func TestParseMFT(t *testing.T) {
 				writer:          nil,
 				bytesPerCluster: 4096,
 			},
-			testFile: ".\\test\\testdata\\mft-lite",
+			testFile: filepath.FromSlash("./test/testdata/mft-lite"),
 			want: WriteToSlice{
 				0: {
 					RecordNumber:     0,
@@ -732,12 +732,8 @@ func TestParseMFT(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			fmt.Println(os.Getwd())
-			var err error
-			tt.args.fileHandle, err = os.Open(tt.testFile)
-			if err != nil {
-				fmt.Println(err)
-			}
+
+			tt.args.fileHandle, _ = os.Open(tt.testFile)
 			ParseMFT(tt.args.fileHandle, &tt.args.writer, tt.args.streamer, tt.args.bytesPerCluster)
 			if !reflect.DeepEqual(tt.args.writer, tt.want) {
 				t.Errorf(cmp.Diff(tt.args.writer, tt.want))
