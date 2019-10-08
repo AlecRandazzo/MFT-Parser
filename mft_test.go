@@ -2,6 +2,7 @@ package GoFor_MFT_Parser
 
 import (
 	"bytes"
+	"fmt"
 	"github.com/google/go-cmp/cmp"
 	"io"
 	"os"
@@ -731,7 +732,12 @@ func TestParseMFT(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tt.args.fileHandle, _ = os.Open(tt.testFile)
+			fmt.Println(os.Getwd())
+			var err error
+			tt.args.fileHandle, err = os.Open(tt.testFile)
+			if err != nil {
+				fmt.Println(err)
+			}
 			ParseMFT(tt.args.fileHandle, &tt.args.writer, tt.args.streamer, tt.args.bytesPerCluster)
 			if !reflect.DeepEqual(tt.args.writer, tt.want) {
 				t.Errorf(cmp.Diff(tt.args.writer, tt.want))
