@@ -15,10 +15,16 @@ import (
 	"fmt"
 )
 
-type RawAttribute []byte
-type RawAttributes []RawAttribute
+// []byte alias containing bytes of a raw MFT record attribute.
+type rawAttribute []byte
 
+// Slice of rawAttribute []byte aliases. Used primarily as a method receiver for the parse() method.
+// See here for a handy list of attributes: https://flatcap.org/linux-ntfs/ntfs/attributes/index.html
+type RawAttributes []rawAttribute
+
+// Parses a slice of raw attributes and returns its filename, standard information, and dat attributes. It takes an argument for bytes per cluster (typically 4096) which is used for computing data run information in a data attributes.
 func (rawAttributes RawAttributes) Parse(bytesPerCluster int64) (fileNameAttributes FileNameAttributes, standardInformationAttribute StandardInformationAttribute, dataAttribute DataAttribute, err error) {
+	// Sanity check to make sure that the method received valid data
 	sizeOfRawAttributesSlice := len(rawAttributes)
 	if sizeOfRawAttributesSlice == 0 {
 		err = errors.New("nil sized rawAttributes slice")
@@ -28,10 +34,15 @@ func (rawAttributes RawAttributes) Parse(bytesPerCluster int64) (fileNameAttribu
 		return
 	}
 
-	const codeFileName = 0x30
+	// These constants are the "magic number" aka first byte for each type of attribute.
 	const codeStandardInformation = 0x10
+	const codeFileName = 0x30
 	const codeData = 0x80
+
+	// Determine what each raw attribute is and parse it accordingly.
 	for _, rawAttribute := range rawAttributes {
+
+		// Sanity check to make sure the attribute actually has bytes in it.
 		sizeOfRawAttribute := len(rawAttribute)
 		if sizeOfRawAttribute == 0 {
 			err = errors.New("came across a rawAttribute with a nil size")
@@ -41,6 +52,7 @@ func (rawAttributes RawAttributes) Parse(bytesPerCluster int64) (fileNameAttribu
 			return
 		}
 
+		// Check the first byte to see if it is one of the "magic number" bytes we care about. If it is, we parse those raw attributes accordingly.
 		switch rawAttribute[0x00] {
 		case codeFileName:
 			rawFileNameAttribute := RawFileNameAttribute(make([]byte, len(rawAttribute)))
@@ -82,6 +94,7 @@ func (rawAttributes RawAttributes) Parse(bytesPerCluster int64) (fileNameAttribu
 	return
 }
 
+// Returns the attribute bytes from an unparsed mft record which is the method receiver. It takes recordHeader as an argument since the record header contains the offset for the start of the attributes.
 func (rawMftRecord RawMasterFileTableRecord) GetRawAttributes(recordHeader RecordHeader) (rawAttributes RawAttributes, err error) {
 	// Doing some sanity checks
 	if len(rawMftRecord) == 0 {
@@ -119,7 +132,7 @@ func (rawMftRecord RawMasterFileTableRecord) GetRawAttributes(recordHeader Recor
 		attributeSize := binary.LittleEndian.Uint16(rawMftRecord[offset+offsetAttributeSize : offset+offsetAttributeSize+lengthAttributeSize])
 		end := offset + attributeSize
 
-		rawAttribute := RawAttribute(make([]byte, attributeSize))
+		rawAttribute := rawAttribute(make([]byte, attributeSize))
 		copy(rawAttribute, rawMftRecord[offset:end])
 
 		// Append the rawAttributes to the RawAttributes struct
@@ -132,6 +145,7 @@ func (rawMftRecord RawMasterFileTableRecord) GetRawAttributes(recordHeader Recor
 	return
 }
 
+// Checks if the byte value equals a valid attribute type. We only do things with a few of these.
 func isThisAnAttribute(attributeHeaderToCheck byte) (result bool) {
 	// Init a byte slice that tracks all possible valid MFT Attribute types.
 	// We'll be used this to verify if what we are looking at is actually an MFT Attribute.

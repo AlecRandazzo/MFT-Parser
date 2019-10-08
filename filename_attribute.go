@@ -17,33 +17,36 @@ import (
 	"time"
 )
 
+// Slice that contains a list of filename attributes.
 type FileNameAttributes []FileNameAttribute
 
-type FlagResidency bool
+type flagResidency bool
 
+// Contains information about a filename attribute.
 type FileNameAttribute struct {
 	FnCreated               time.Time
 	FnModified              time.Time
 	FnAccessed              time.Time
 	FnChanged               time.Time
-	FlagResident            FlagResidency
-	NameLength              NameLength
-	AttributeSize           uint32
-	ParentDirRecordNumber   uint64
-	ParentDirSequenceNumber uint16
+	flagResident            bool
+	nameLength              nameLength
+	attributeSize           uint32
+	parentDirRecordNumber   uint64
+	parentDirSequenceNumber uint16
 	LogicalFileSize         uint64
 	PhysicalFileSize        uint64
 	FileNameFlags           FileNameFlags
-	FileNameLength          byte
-	FileNamespace           string
+	fileNameLength          byte
+	fileNamespace           string
 	FileName                string
 }
 
-type NameLength struct {
-	FlagNamed bool
-	NamedSize byte
+type nameLength struct {
+	flagNamed bool
+	namedSize byte
 }
 
+// Contains possible filename flags a file may have.
 type FileNameFlags struct {
 	ReadOnly          bool
 	Hidden            bool
@@ -62,8 +65,19 @@ type FileNameFlags struct {
 	IndexView         bool
 }
 
+// []byte alias for raw filename flags. Used with the Parse() method.
+type RawFilenameFlags []byte
+
+// byte alias for raw residency flag. Used with the Parse() method.
+type RawResidencyFlag byte
+
+// []byte alias for raw filename attribute. Used with the Parse() method.
 type RawFileNameAttribute []byte
 
+// byte alias for raw filename namespace flag. Used with the Parse() method.
+type RawFilenameNameSpaceFlag byte
+
+// Parses the raw filename attribute receiver and returns a parsed filename attribute.
 func (rawFileNameAttribute RawFileNameAttribute) Parse() (filenameAttribute FileNameAttribute, err error) {
 	const offsetAttributeSize = 0x04
 	const lengthAttributeSize = 0x04
@@ -101,51 +115,54 @@ func (rawFileNameAttribute RawFileNameAttribute) Parse() (filenameAttribute File
 	const offsetFileNameSpace = 0x59
 	const offsetFileName = 0x5a
 
-	// The filename Attribute has a minimum length of 0x44
+	// Sanity check that we have data to work with
 	attributeLength := len(rawFileNameAttribute)
 	if attributeLength < 0x44 {
-		err = errors.New("FileNameAttribute.Parse() did not receive valid bytes")
+		err = errors.New("FileNameAttribute.parse() did not receive valid bytes")
 		return
 	}
-	filenameAttribute.FlagResident.Parse(rawFileNameAttribute[offsetResidentFlag])
-	if filenameAttribute.FlagResident == false {
+
+	rawResidencyFlag := RawResidencyFlag(rawFileNameAttribute[offsetResidentFlag])
+	filenameAttribute.flagResident = rawResidencyFlag.Parse()
+	if filenameAttribute.flagResident == false {
 		err = errors.New("parseFileNameAttribute(): non-resident filename Attribute encountered")
 		return
 	}
-	filenameAttribute.AttributeSize, _ = bin.LittleEndianBinaryToUInt32(rawFileNameAttribute[offsetAttributeSize : offsetAttributeSize+lengthAttributeSize])
-
-	filenameAttribute.ParentDirRecordNumber, _ = bin.LittleEndianBinaryToUInt64(rawFileNameAttribute[offsetParentRecordNumber : offsetParentRecordNumber+lengthParentRecordNumber])
-	filenameAttribute.ParentDirSequenceNumber, _ = bin.LittleEndianBinaryToUInt16(rawFileNameAttribute[offsetParentDirSequenceNumber : offsetParentDirSequenceNumber+lengthParentDirSequenceNumber])
-
+	filenameAttribute.attributeSize, _ = bin.LittleEndianBinaryToUInt32(rawFileNameAttribute[offsetAttributeSize : offsetAttributeSize+lengthAttributeSize])
+	filenameAttribute.parentDirRecordNumber, _ = bin.LittleEndianBinaryToUInt64(rawFileNameAttribute[offsetParentRecordNumber : offsetParentRecordNumber+lengthParentRecordNumber])
+	filenameAttribute.parentDirSequenceNumber, _ = bin.LittleEndianBinaryToUInt16(rawFileNameAttribute[offsetParentDirSequenceNumber : offsetParentDirSequenceNumber+lengthParentDirSequenceNumber])
 	rawFnCreated := ts.RawTimestamp(rawFileNameAttribute[offsetFnCreated : offsetFnCreated+lengthFnCreated])
 	rawFnModified := ts.RawTimestamp(rawFileNameAttribute[offsetFnModified : offsetFnModified+lengthFnModified])
 	rawFnChanged := ts.RawTimestamp(rawFileNameAttribute[offsetFnChanged : offsetFnChanged+lengthFnChanged])
 	rawFnAccessed := ts.RawTimestamp(rawFileNameAttribute[offsetFnAccessed : offsetFnAccessed+lengthFnAccessed])
-
 	filenameAttribute.FnCreated, _ = rawFnCreated.Parse()
 	filenameAttribute.FnModified, _ = rawFnModified.Parse()
 	filenameAttribute.FnChanged, _ = rawFnChanged.Parse()
 	filenameAttribute.FnAccessed, _ = rawFnAccessed.Parse()
 	filenameAttribute.LogicalFileSize, _ = bin.LittleEndianBinaryToUInt64(rawFileNameAttribute[offsetLogicalFileSize : offsetLogicalFileSize+lengthLogicalFileSize])
 	filenameAttribute.PhysicalFileSize, _ = bin.LittleEndianBinaryToUInt64(rawFileNameAttribute[offSetPhysicalFileSize : offSetPhysicalFileSize+lengthPhysicalFileSize])
-	filenameAttribute.FileNameFlags.Parse(rawFileNameAttribute[offsetFnFlags : offsetFnFlags+lengthFnFlags])
-	filenameAttribute.FileNameLength = rawFileNameAttribute[offsetFileNameLength] * 2 // times two to account for unicode characters
-	filenameAttribute.FileNamespace = identifyFileNamespace(rawFileNameAttribute[offsetFileNameSpace])
-	filenameAttribute.FileName, _ = bin.UnicodeBytesToASCII(rawFileNameAttribute[offsetFileName : offsetFileName+int(filenameAttribute.FileNameLength)])
+	flagBytes := RawFilenameFlags(rawFileNameAttribute[offsetFnFlags : offsetFnFlags+lengthFnFlags])
+	filenameAttribute.FileNameFlags = flagBytes.Parse()
+	filenameAttribute.fileNameLength = rawFileNameAttribute[offsetFileNameLength] * 2 // times two to account for unicode characters
+	rawFilenameNameSpaceFlag := RawFilenameNameSpaceFlag(rawFileNameAttribute[offsetFileNameSpace])
+	filenameAttribute.fileNamespace = rawFilenameNameSpaceFlag.Parse()
+	filenameAttribute.FileName, _ = bin.UnicodeBytesToASCII(rawFileNameAttribute[offsetFileName : offsetFileName+int(filenameAttribute.fileNameLength)])
 	return
 }
 
-func (flagResidency *FlagResidency) Parse(byteToCheck byte) {
+// Parses the raw residency flag receiver and returns a flag residency value.
+func (byteToCheck RawResidencyFlag) Parse() (flagResidency bool) {
 	switch byteToCheck {
 	case 0x00:
-		*flagResidency = true
+		flagResidency = true
 	default:
-		*flagResidency = false
+		flagResidency = false
 	}
 	return
 }
 
-func identifyFileNamespace(fileNamespaceFlag byte) (fileNameSpace string) {
+// Parses the raw file namespace flag receiver and returns a file namespace value.
+func (fileNamespaceFlag RawFilenameNameSpaceFlag) Parse() (fileNameSpace string) {
 	switch fileNamespaceFlag {
 	case 0x00:
 		fileNameSpace = "POSIX"
@@ -162,7 +179,8 @@ func identifyFileNamespace(fileNamespaceFlag byte) (fileNameSpace string) {
 	return
 }
 
-func (fileNameFlags *FileNameFlags) Parse(flagBytes []byte) {
+// Parses the raw filename flags receiver and returns filename flags.
+func (flagBytes RawFilenameFlags) Parse() (fileNameFlags FileNameFlags) {
 	unparsedFlags := binary.LittleEndian.Uint32(flagBytes)
 	//init values
 	fileNameFlags.ReadOnly = false

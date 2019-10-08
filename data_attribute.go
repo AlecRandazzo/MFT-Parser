@@ -16,38 +16,51 @@ import (
 	"strconv"
 )
 
+// Alias for a raw data attribute. Used as a receiver to the parse() method.
 type RawDataAttribute []byte
+
+// Alias for a raw resident data attribute. Used as a receiver to the parse() method. We don't really do anything this this currently.
 type RawResidentDataAttribute []byte
+
+// Alias for a raw nonresident data attribute. Used as a receiver to the parse() method.
 type RawNonResidentDataAttribute []byte
+
+// Alias for a raw data runs. Used as a receiver to the parse() method.
+// See this for more details on data runs: https://flatcap.org/linux-ntfs/ntfs/concepts/data_runs.html
 type RawDataRuns []byte
-type RawDataRunSplitByte byte
-type RawDataRun []byte
+type rawDataRunSplitByte byte
+
+// Alias for a resident data attribute.
 type ResidentDataAttribute []byte
 
+// Alias for a parsed non-resident data attribute.
 type NonResidentDataAttribute struct {
 	DataRuns DataRuns
 }
 
-type UnresolvedDataRun struct {
-	NumberOrder      int
-	ClusterOffset    int64
-	NumberOfClusters int64
+type unresolvedDataRun struct {
+	numberOrder      int
+	clusterOffset    int64
+	numberOfClusters int64
 }
 
-type UnresolvedDataRuns map[int]UnresolvedDataRun
+type unresolvedDataRuns map[int]unresolvedDataRun
 
+// Contains an ordered slice of parsed data runs
 type DataRuns map[int]DataRun
 
+// Contains a parsed data run which contains the absolute offset of where the data run resides in the volume and the length of the data run.
 type DataRun struct {
 	AbsoluteOffset int64
 	Length         int64
 }
 
-type DataRunSplit struct {
+type dataRunSplit struct {
 	offsetByteCount int
 	lengthByteCount int
 }
 
+// Contains information about a parsed data attribute.
 type DataAttribute struct {
 	TotalSize                uint8
 	FlagResident             bool
@@ -55,7 +68,10 @@ type DataAttribute struct {
 	NonResidentDataAttribute NonResidentDataAttribute
 }
 
+// Parses the raw data attribute receiver and returns a non resident data attribute or a resident data attribute. The bytes per cluster argument is used to calculate data run information.
 func (rawDataAttribute RawDataAttribute) Parse(bytesPerCluster int64) (nonResidentDataAttribute NonResidentDataAttribute, residentDataAttribute ResidentDataAttribute, err error) {
+
+	// Sanity checks on data the method receives to make sure it can successfully do work on the data.
 	const offsetResidentFlag = 0x08
 	sizeOfRawDataAttribute := len(rawDataAttribute)
 	if sizeOfRawDataAttribute == 0 {
@@ -65,14 +81,12 @@ func (rawDataAttribute RawDataAttribute) Parse(bytesPerCluster int64) (nonReside
 		err = errors.New("received bytes less than 8")
 		return
 	}
-
 	if bytesPerCluster == 0 {
 		err = errors.New("did not receive a value for bytes per cluster")
 		return
 	}
 
-	//TODO: handle resident data
-
+	// Check to see if the attribute is resident or not. Parses the data accordingly.
 	if rawDataAttribute[offsetResidentFlag] == 0x00 {
 		rawResidentDataAttribute := RawResidentDataAttribute(make([]byte, sizeOfRawDataAttribute))
 		copy(rawResidentDataAttribute, rawDataAttribute)
@@ -95,7 +109,9 @@ func (rawDataAttribute RawDataAttribute) Parse(bytesPerCluster int64) (nonReside
 	return
 }
 
+// Parses the raw resident data attribute receiver and returns the resident data attribute bytes.
 func (rawResidentDataAttribute RawResidentDataAttribute) Parse() (residentDataAttribute ResidentDataAttribute, err error) {
+	// Sanity check to make sure the method received good data
 	const offsetResidentData = 0x18
 	sizeOfRawResidentDataAttribute := len(rawResidentDataAttribute)
 	if sizeOfRawResidentDataAttribute == 0 {
@@ -111,7 +127,9 @@ func (rawResidentDataAttribute RawResidentDataAttribute) Parse() (residentDataAt
 	return
 }
 
+// Parses the raw non resident data attribute receiver and returns a non resident data attribute. The bytes per cluster argument is used to calculate data run information.
 func (rawNonResidentDataAttribute RawNonResidentDataAttribute) Parse(bytesPerCluster int64) (nonResidentDataAttributes NonResidentDataAttribute, err error) {
+	// Sanity check to make sure the method received good data
 	const offsetDataRunOffset = 0x20
 	sizeOfRawNonResidentDataAttribute := len(rawNonResidentDataAttribute)
 	if sizeOfRawNonResidentDataAttribute == 0 {
@@ -123,9 +141,9 @@ func (rawNonResidentDataAttribute RawNonResidentDataAttribute) Parse(bytesPerClu
 	}
 
 	// Identify offset of the data runs in the data Attribute
-
 	dataRunOffset := rawNonResidentDataAttribute[offsetDataRunOffset]
 
+	// Verify we aren't going outside the bounds of the byte slice
 	if sizeOfRawNonResidentDataAttribute < int(dataRunOffset) {
 		err = errors.New("data run offset is beyond the size of the byte slice")
 		return
@@ -141,15 +159,17 @@ func (rawNonResidentDataAttribute RawNonResidentDataAttribute) Parse(bytesPerClu
 	return
 }
 
+// Parses the raw data run receiver and returns data runs. The bytes per cluster argument is used to calculate data run information.
 func (rawDataRuns RawDataRuns) Parse(bytesPerCluster int64) (dataRuns DataRuns, err error) {
+	// Sanity check that the method received good data
 	if rawDataRuns == nil {
 		err = errors.New("received null bytes")
 		return
 	}
 
 	// Initialize a few variables
-	UnresolvedDataRun := UnresolvedDataRun{}
-	UnresolvedDataRuns := make(UnresolvedDataRuns)
+	UnresolvedDataRun := unresolvedDataRun{}
+	UnresolvedDataRuns := make(unresolvedDataRuns)
 	sizeOfRawDataRuns := len(rawDataRuns)
 	dataRuns = make(DataRuns)
 	offset := 0
@@ -162,8 +182,8 @@ func (rawDataRuns RawDataRuns) Parse(bytesPerCluster int64) (dataRuns DataRuns, 
 		} else {
 			// Take the first byte of a data run and send it to get split so we know how many bytes account for the
 			// data run's offset and how many account for the data run's length.
-			byteToBeSplit := RawDataRunSplitByte(rawDataRuns[offset])
-			dataRunSplit := byteToBeSplit.Parse()
+			byteToBeSplit := rawDataRunSplitByte(rawDataRuns[offset])
+			dataRunSplit := byteToBeSplit.parse()
 			offset += 1
 
 			// Pull out the the bytes that account for the data runs offset2 and length
@@ -175,8 +195,8 @@ func (rawDataRuns RawDataRuns) Parse(bytesPerCluster int64) (dataRuns DataRuns, 
 			copy(offsetBytes, rawDataRuns[(offset+dataRunSplit.lengthByteCount):(offset+dataRunSplit.lengthByteCount+dataRunSplit.offsetByteCount)])
 
 			// Convert the bytes for the data run offset and length to little endian int64
-			UnresolvedDataRun.ClusterOffset, _ = bin.LittleEndianBinaryToInt64(offsetBytes)
-			UnresolvedDataRun.NumberOfClusters, _ = bin.LittleEndianBinaryToInt64(lengthBytes)
+			UnresolvedDataRun.clusterOffset, _ = bin.LittleEndianBinaryToInt64(offsetBytes)
+			UnresolvedDataRun.numberOfClusters, _ = bin.LittleEndianBinaryToInt64(lengthBytes)
 
 			// Append the data run to our data run struct
 			UnresolvedDataRuns[runCounter] = UnresolvedDataRun
@@ -192,20 +212,18 @@ func (rawDataRuns RawDataRuns) Parse(bytesPerCluster int64) (dataRuns DataRuns, 
 	// resolve Data Runs
 	dataRunOffset := int64(0)
 	for i := 0; i < len(UnresolvedDataRuns); i++ {
-		dataRunOffset = dataRunOffset + (UnresolvedDataRuns[i].ClusterOffset * bytesPerCluster)
+		dataRunOffset = dataRunOffset + (UnresolvedDataRuns[i].clusterOffset * bytesPerCluster)
 		dataRuns[i] = DataRun{
 			AbsoluteOffset: dataRunOffset,
-			Length:         UnresolvedDataRuns[i].NumberOfClusters * bytesPerCluster,
+			Length:         UnresolvedDataRuns[i].numberOfClusters * bytesPerCluster,
 		}
 	}
 	return
 }
 
-/*
-	This function will split the first byte of a data run.
-	See the following for a good write up on data runs: https://homepage.cs.uri.edu/~thenry/csc487/video/66_NTFS_Data_Runs.pdf
-*/
-func (rawDataRunSplitByte RawDataRunSplitByte) Parse() (dataRunSplit DataRunSplit) {
+// This function will split the first byte of a data run.
+// See the following for a good write up on data runs: https://homepage.cs.uri.edu/~thenry/csc487/video/66_NTFS_Data_Runs.pdf
+func (rawDataRunSplitByte rawDataRunSplitByte) parse() (dataRunSplit dataRunSplit) {
 	// Convert the byte to a hex string
 	hexToSplit := fmt.Sprintf("%x", rawDataRunSplitByte)
 

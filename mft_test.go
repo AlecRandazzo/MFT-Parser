@@ -72,11 +72,11 @@ func TestRawMasterFileTableRecord_Parse(t *testing.T) {
 						FnModified:              time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
 						FnAccessed:              time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
 						FnChanged:               time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
-						FlagResident:            true,
-						NameLength:              NameLength{},
-						AttributeSize:           104,
-						ParentDirRecordNumber:   5,
-						ParentDirSequenceNumber: 0,
+						flagResident:            true,
+						nameLength:              nameLength{},
+						attributeSize:           104,
+						parentDirRecordNumber:   5,
+						parentDirSequenceNumber: 0,
 						LogicalFileSize:         16384,
 						PhysicalFileSize:        16384,
 						FileNameFlags: FileNameFlags{
@@ -96,8 +96,8 @@ func TestRawMasterFileTableRecord_Parse(t *testing.T) {
 							Directory:         false,
 							IndexView:         false,
 						},
-						FileNameLength: 8,
-						FileNamespace:  "WIN32 & DOS",
+						fileNameLength: 8,
+						fileNamespace:  "WIN32 & DOS",
 						FileName:       "$MFT",
 					},
 				},
@@ -189,11 +189,11 @@ func TestRawMasterFileTableRecord_Parse(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			gotMftRecord, err := tt.rawMftRecord.Parse(tt.args.bytesPerCluster)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("Parse() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("parse() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(gotMftRecord, tt.wantMftRecord) {
-				t.Errorf("Parse() gotMftRecord = %v, want %v", gotMftRecord, tt.wantMftRecord)
+				t.Errorf("parse() gotMftRecord = %v, want %v", gotMftRecord, tt.wantMftRecord)
 			}
 		})
 	}
@@ -234,11 +234,11 @@ func TestGetUsefulMftFields(t *testing.T) {
 							FnModified:              time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
 							FnAccessed:              time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
 							FnChanged:               time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
-							FlagResident:            true,
-							NameLength:              NameLength{},
-							AttributeSize:           104,
-							ParentDirRecordNumber:   5,
-							ParentDirSequenceNumber: 0,
+							flagResident:            true,
+							nameLength:              nameLength{},
+							attributeSize:           104,
+							parentDirRecordNumber:   5,
+							parentDirSequenceNumber: 0,
 							LogicalFileSize:         16384,
 							PhysicalFileSize:        16384,
 							FileNameFlags: FileNameFlags{
@@ -258,8 +258,8 @@ func TestGetUsefulMftFields(t *testing.T) {
 								Directory:         false,
 								IndexView:         false,
 							},
-							FileNameLength: 8,
-							FileNamespace:  "WIN32 & DOS",
+							fileNameLength: 8,
+							fileNamespace:  "WIN32 & DOS",
 							FileName:       "$MFT",
 						},
 					},
@@ -357,11 +357,11 @@ func TestGetUsefulMftFields(t *testing.T) {
 							FnModified:              time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
 							FnAccessed:              time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
 							FnChanged:               time.Date(2018, 2, 25, 00, 10, 45, 642455000, time.UTC),
-							FlagResident:            true,
-							NameLength:              NameLength{},
-							AttributeSize:           104,
-							ParentDirRecordNumber:   5,
-							ParentDirSequenceNumber: 0,
+							flagResident:            true,
+							nameLength:              nameLength{},
+							attributeSize:           104,
+							parentDirRecordNumber:   5,
+							parentDirSequenceNumber: 0,
 							LogicalFileSize:         16384,
 							PhysicalFileSize:        16384,
 							FileNameFlags: FileNameFlags{
@@ -381,8 +381,8 @@ func TestGetUsefulMftFields(t *testing.T) {
 								Directory:         false,
 								IndexView:         false,
 							},
-							FileNameLength: 8,
-							FileNamespace:  "WIN32 & DOS",
+							fileNameLength: 8,
+							fileNamespace:  "WIN32 & DOS",
 							FileName:       "$MFT",
 						},
 					},
