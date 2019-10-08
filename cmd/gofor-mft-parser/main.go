@@ -11,7 +11,6 @@ package main
 
 import (
 	"fmt"
-	mft "github.com/AlecRandazzo/GoFor-MFT-Parser"
 	log "github.com/sirupsen/logrus"
 	"os"
 )
@@ -40,14 +39,9 @@ func main() {
 		return
 	}
 	defer inFile.Close()
-
-	writer := mft.CsvWriter{
-		OutFile: outFile,
-	}
-
-	err = mft.ParseMFT(inFile, writer, 4)
-	if err != nil {
-		log.Fatal(err)
-	}
+	//writer := mft.CsvWriter{
+	//	OutStream: outFile,
+	//}
+	//mft.ParseMFT(inFile, writer, 4096)
 
 }
