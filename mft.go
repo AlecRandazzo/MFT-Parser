@@ -95,8 +95,8 @@ func ParseMftRecords(reader io.Reader, bytesPerCluster int64, directoryTree Dire
 // This method will pull out and return just the MFT record fields that are useful to an analyst.
 func GetUsefulMftFields(mftRecord MasterFileTableRecord, directoryTree DirectoryTree) (useFulMftFields UsefulMftFields) {
 	for _, record := range mftRecord.FileNameAttributes {
-		if strings.Contains(record.fileNamespace, "WIN32") || strings.Contains(record.fileNamespace, "POSIX") {
-			if directory, ok := directoryTree[record.parentDirRecordNumber]; ok {
+		if strings.Contains(record.FileNamespace, "WIN32") || strings.Contains(record.FileNamespace, "POSIX") {
+			if directory, ok := directoryTree[record.ParentDirRecordNumber]; ok {
 				useFulMftFields.FileName = record.FileName
 				useFulMftFields.FilePath = directory
 				useFulMftFields.FullPath = useFulMftFields.FilePath + useFulMftFields.FileName
