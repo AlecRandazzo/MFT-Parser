@@ -209,7 +209,7 @@ func (rawDataRuns RawDataRuns) Parse(bytesPerCluster int64) (dataRuns DataRuns, 
 		}
 	}
 
-	// resolve Data Runs
+	// Resolve Data Runs
 	dataRunOffset := int64(0)
 	for i := 0; i < len(UnresolvedDataRuns); i++ {
 		dataRunOffset = dataRunOffset + (UnresolvedDataRuns[i].clusterOffset * bytesPerCluster)

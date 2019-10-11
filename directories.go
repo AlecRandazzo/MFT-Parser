@@ -116,7 +116,7 @@ func BuildUnresolvedDirectoryTree(reader io.Reader) (unresolvedDirectoryTree Unr
 }
 
 // Combines a running list of directories from a channel in order to create the systems directory trees.
-func (unresolvedDirectoryTree UnresolvedDirectoryTree) resolve() (directoryTree DirectoryTree) {
+func (unresolvedDirectoryTree UnresolvedDirectoryTree) Resolve() (directoryTree DirectoryTree) {
 	directoryTree = make(DirectoryTree)
 	for recordNumber, directoryMetadata := range unresolvedDirectoryTree {
 		mappingDirectory := directoryMetadata.directoryName
@@ -148,6 +148,6 @@ func (unresolvedDirectoryTree UnresolvedDirectoryTree) resolve() (directoryTree 
 func BuildDirectoryTree(reader io.Reader) (directoryTree DirectoryTree, err error) {
 	directoryTree = make(DirectoryTree)
 	unresolvedDirectoryTree, _ := BuildUnresolvedDirectoryTree(reader)
-	directoryTree = unresolvedDirectoryTree.resolve()
+	directoryTree = unresolvedDirectoryTree.Resolve()
 	return
 }
