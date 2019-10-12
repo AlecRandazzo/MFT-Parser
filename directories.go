@@ -119,6 +119,11 @@ func BuildUnresolvedDirectoryTree(reader io.Reader) (unresolvedDirectoryTree Unr
 func (unresolvedDirectoryTree UnresolvedDirectoryTree) Resolve() (directoryTree DirectoryTree) {
 	directoryTree = make(DirectoryTree)
 	for recordNumber, directoryMetadata := range unresolvedDirectoryTree {
+		// Sanity check
+		if directoryMetadata.directoryName == "" && directoryMetadata.parentRecordNumber == 0 && directoryMetadata.recordNumber == 0 {
+			continue
+		}
+
 		mappingDirectory := directoryMetadata.directoryName
 		parentRecordNumberPointer := directoryMetadata.parentRecordNumber
 		for {
