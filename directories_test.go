@@ -148,7 +148,7 @@ func TestBuildUnresolvedDirectoryTree(t *testing.T) {
 	}
 }
 
-func TestUnresolvedDirectoryTree_resolve(t *testing.T) {
+func TestUnresolvedDirectoryTree_Resolve(t *testing.T) {
 	tests := []struct {
 		name                    string
 		unresolvedDirectoryTree UnresolvedDirectoryTree
@@ -176,6 +176,11 @@ func TestUnresolvedDirectoryTree_resolve(t *testing.T) {
 					recordNumber:       50,
 					directoryName:      "orphan",
 					parentRecordNumber: 34,
+				},
+				0: directory{
+					recordNumber:       0,
+					directoryName:      "",
+					parentRecordNumber: 0,
 				},
 			},
 			wantDirectoryTree: DirectoryTree{
