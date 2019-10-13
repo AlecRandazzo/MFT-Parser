@@ -29,11 +29,11 @@ func (csvResultWriter *CsvResultWriter) ResultWriter(streamer io.Writer, outputC
 	delimiter := "|"
 	csvHeader := []string{
 		"Record Number",
-		"directory Flag",
-		"System File Flag",
-		"Hidden Flag",
-		"Read-only Flag",
-		"Deleted Flag",
+		"Directory",
+		"System File",
+		"Hidden",
+		"Read-only",
+		"Deleted",
 		"File Path",
 		"File Name",
 		"File Size",
