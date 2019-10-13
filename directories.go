@@ -88,8 +88,8 @@ func convertRawMFTRecordToDirectory(rawMftRecord RawMasterFileTableRecord) (dire
 			directory.recordNumber = uint64(recordHeader.RecordNumber)
 			directory.directoryName = fileNameAttribute.FileName
 			directory.parentRecordNumber = fileNameAttribute.ParentDirRecordNumber
+			break
 		}
-		break
 	}
 	return
 }
