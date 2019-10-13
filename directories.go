@@ -7,7 +7,7 @@
  *
  */
 
-package GoFor_MFT_Parser
+package mft
 
 import (
 	"errors"
@@ -22,13 +22,13 @@ type directory struct {
 	parentRecordNumber uint64
 }
 
-// Contains a slice of directories that need to be joined to create a directory tree.
+// UnresolvedDirectoryTree contains a slice of directories that need to be joined to create a directory tree.
 type UnresolvedDirectoryTree map[uint64]directory
 
-// Contains a directory tree.
+// DirectoryTree contains a directory tree.
 type DirectoryTree map[uint64]string
 
-// Quickly checks the bytes of an MFT record to determine if it is a directory or not.
+// IsThisADirectory will quickly check the bytes of an MFT record to determine if it is a directory or not.
 func (rawMftRecord RawMasterFileTableRecord) IsThisADirectory() (result bool, err error) {
 	// Sanity checks that the method received good data
 	const offsetRecordFlag = 0x16
@@ -88,13 +88,13 @@ func convertRawMFTRecordToDirectory(rawMftRecord RawMasterFileTableRecord) (dire
 			directory.recordNumber = uint64(recordHeader.RecordNumber)
 			directory.directoryName = fileNameAttribute.FileName
 			directory.parentRecordNumber = fileNameAttribute.ParentDirRecordNumber
+			break
 		}
-		break
 	}
 	return
 }
 
-// Takes an MFT and does a first pass to find all the directories listed in it. These will form an unresolved directory tree that need to be stitched together.
+// BuildUnresolvedDirectoryTree takes an MFT and does a first pass to find all the directories listed in it. These will form an unresolved directory tree that need to be stitched together.
 func BuildUnresolvedDirectoryTree(reader io.Reader) (unresolvedDirectoryTree UnresolvedDirectoryTree, err error) {
 	unresolvedDirectoryTree = make(UnresolvedDirectoryTree)
 	for {
@@ -115,7 +115,7 @@ func BuildUnresolvedDirectoryTree(reader io.Reader) (unresolvedDirectoryTree Unr
 	return
 }
 
-// Combines a running list of directories from a channel in order to create the systems directory trees.
+// Resolve combines a running list of directories from a channel in order to create the systems directory trees.
 func (unresolvedDirectoryTree UnresolvedDirectoryTree) Resolve() (directoryTree DirectoryTree) {
 	directoryTree = make(DirectoryTree)
 	for recordNumber, directoryMetadata := range unresolvedDirectoryTree {
@@ -149,7 +149,7 @@ func (unresolvedDirectoryTree UnresolvedDirectoryTree) Resolve() (directoryTree 
 	return
 }
 
-// Takes an MFT and creates a directory tree where the slice keys are the mft record number of the directory. This record number is importable because files will reference it as its parent mft record number.
+// BuildDirectoryTree takes an MFT and creates a directory tree where the slice keys are the mft record number of the directory. This record number is importable because files will reference it as its parent mft record number.
 func BuildDirectoryTree(reader io.Reader) (directoryTree DirectoryTree, err error) {
 	directoryTree = make(DirectoryTree)
 	unresolvedDirectoryTree, _ := BuildUnresolvedDirectoryTree(reader)

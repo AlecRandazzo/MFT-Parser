@@ -7,7 +7,7 @@
  *
  */
 
-package GoFor_MFT_Parser
+package mft
 
 import (
 	"errors"
@@ -16,24 +16,24 @@ import (
 	"strconv"
 )
 
-// Alias for a raw data attribute. Used as a receiver to the parse() method.
+// RawDataAttribute is an alias for a raw data attribute. Used as a receiver to the parse() method.
 type RawDataAttribute []byte
 
-// Alias for a raw resident data attribute. Used as a receiver to the parse() method. We don't really do anything this this currently.
+// RawResidentDataAttribute is an alias for a raw resident data attribute. Used as a receiver to the parse() method. We don't really do anything this this currently.
 type RawResidentDataAttribute []byte
 
-// Alias for a raw nonresident data attribute. Used as a receiver to the parse() method.
+// RawNonResidentDataAttribute is an alias for a raw nonresident data attribute. Used as a receiver to the parse() method.
 type RawNonResidentDataAttribute []byte
 
-// Alias for a raw data runs. Used as a receiver to the parse() method.
+// RawDataRuns is an alias for a raw data runs. Used as a receiver to the parse() method.
 // See this for more details on data runs: https://flatcap.org/linux-ntfs/ntfs/concepts/data_runs.html
 type RawDataRuns []byte
 type rawDataRunSplitByte byte
 
-// Alias for a resident data attribute.
+// ResidentDataAttribute is an alias for a resident data attribute.
 type ResidentDataAttribute []byte
 
-// Alias for a parsed non-resident data attribute.
+// NonResidentDataAttribute is an alias for a parsed non-resident data attribute.
 type NonResidentDataAttribute struct {
 	DataRuns DataRuns
 }
@@ -46,10 +46,10 @@ type unresolvedDataRun struct {
 
 type unresolvedDataRuns map[int]unresolvedDataRun
 
-// Contains an ordered slice of parsed data runs
+// DataRuns contains an ordered slice of parsed data runs
 type DataRuns map[int]DataRun
 
-// Contains a parsed data run which contains the absolute offset of where the data run resides in the volume and the length of the data run.
+// DataRun contains a parsed data run which contains the absolute offset of where the data run resides in the volume and the length of the data run.
 type DataRun struct {
 	AbsoluteOffset int64
 	Length         int64
@@ -60,7 +60,7 @@ type dataRunSplit struct {
 	lengthByteCount int
 }
 
-// Contains information about a parsed data attribute.
+// DataAttribute contains information about a parsed data attribute.
 type DataAttribute struct {
 	TotalSize                uint8
 	FlagResident             bool
@@ -68,7 +68,7 @@ type DataAttribute struct {
 	NonResidentDataAttribute NonResidentDataAttribute
 }
 
-// Parses the raw data attribute receiver and returns a non resident data attribute or a resident data attribute. The bytes per cluster argument is used to calculate data run information.
+// Parse parses the raw data attribute receiver and returns a non resident data attribute or a resident data attribute. The bytes per cluster argument is used to calculate data run information.
 func (rawDataAttribute RawDataAttribute) Parse(bytesPerCluster int64) (nonResidentDataAttribute NonResidentDataAttribute, residentDataAttribute ResidentDataAttribute, err error) {
 
 	// Sanity checks on data the method receives to make sure it can successfully do work on the data.
@@ -96,20 +96,20 @@ func (rawDataAttribute RawDataAttribute) Parse(bytesPerCluster int64) (nonReside
 			return
 		}
 		return
-	} else {
-		rawNonResidentDataAttribute := RawNonResidentDataAttribute(make([]byte, sizeOfRawDataAttribute))
-		copy(rawNonResidentDataAttribute, rawDataAttribute)
-		nonResidentDataAttribute, err = rawNonResidentDataAttribute.Parse(bytesPerCluster)
-		if err != nil {
-			err = fmt.Errorf("failed to parse non resident data attribute: %v", err)
-			return
-		}
+	}
+
+	rawNonResidentDataAttribute := RawNonResidentDataAttribute(make([]byte, sizeOfRawDataAttribute))
+	copy(rawNonResidentDataAttribute, rawDataAttribute)
+	nonResidentDataAttribute, err = rawNonResidentDataAttribute.Parse(bytesPerCluster)
+	if err != nil {
+		err = fmt.Errorf("failed to parse non resident data attribute: %v", err)
+		return
 	}
 
 	return
 }
 
-// Parses the raw resident data attribute receiver and returns the resident data attribute bytes.
+// Parse parses the raw resident data attribute receiver and returns the resident data attribute bytes.
 func (rawResidentDataAttribute RawResidentDataAttribute) Parse() (residentDataAttribute ResidentDataAttribute, err error) {
 	// Sanity check to make sure the method received good data
 	const offsetResidentData = 0x18
@@ -127,7 +127,7 @@ func (rawResidentDataAttribute RawResidentDataAttribute) Parse() (residentDataAt
 	return
 }
 
-// Parses the raw non resident data attribute receiver and returns a non resident data attribute. The bytes per cluster argument is used to calculate data run information.
+// Parse parses the raw non resident data attribute receiver and returns a non resident data attribute. The bytes per cluster argument is used to calculate data run information.
 func (rawNonResidentDataAttribute RawNonResidentDataAttribute) Parse(bytesPerCluster int64) (nonResidentDataAttributes NonResidentDataAttribute, err error) {
 	// Sanity check to make sure the method received good data
 	const offsetDataRunOffset = 0x20
@@ -159,7 +159,7 @@ func (rawNonResidentDataAttribute RawNonResidentDataAttribute) Parse(bytesPerClu
 	return
 }
 
-// Parses the raw data run receiver and returns data runs. The bytes per cluster argument is used to calculate data run information.
+// Parse parses the raw data run receiver and returns data runs. The bytes per cluster argument is used to calculate data run information.
 func (rawDataRuns RawDataRuns) Parse(bytesPerCluster int64) (dataRuns DataRuns, err error) {
 	// Sanity check that the method received good data
 	if rawDataRuns == nil {
@@ -184,7 +184,7 @@ func (rawDataRuns RawDataRuns) Parse(bytesPerCluster int64) (dataRuns DataRuns, 
 			// data run's offset and how many account for the data run's length.
 			byteToBeSplit := rawDataRunSplitByte(rawDataRuns[offset])
 			dataRunSplit := byteToBeSplit.parse()
-			offset += 1
+			offset++
 
 			// Pull out the the bytes that account for the data runs offset2 and length
 			var lengthBytes, offsetBytes []byte
@@ -202,7 +202,7 @@ func (rawDataRuns RawDataRuns) Parse(bytesPerCluster int64) (dataRuns DataRuns, 
 			UnresolvedDataRuns[runCounter] = UnresolvedDataRun
 
 			// Increment the number order in preparation for the next data run.
-			runCounter += 1
+			runCounter++
 
 			// Set the offset tracker to the position of the next data run
 			offset = offset + dataRunSplit.lengthByteCount + dataRunSplit.offsetByteCount

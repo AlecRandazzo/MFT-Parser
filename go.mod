@@ -1,10 +1,12 @@
 module github.com/AlecRandazzo/GoFor-MFT-Parser
 
-go 1.13
+go 1.13.1
 
 require (
-	github.com/AlecRandazzo/BinaryTransforms v1.2.1
-	github.com/AlecRandazzo/Timestamp-Parser v1.3.1
+	github.com/AlecRandazzo/BinaryTransforms v1.2.3
+	github.com/AlecRandazzo/Timestamp-Parser v1.3.3
 	github.com/google/go-cmp v0.3.1
 	github.com/sirupsen/logrus v1.4.2
+	golang.org/x/lint v0.0.0-20190930215403-16217165b5de // indirect
+	golang.org/x/tools v0.0.0-20191012152004-8de300cfc20a // indirect
 )

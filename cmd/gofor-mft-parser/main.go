@@ -10,7 +10,9 @@
 package main
 
 import (
+	"flag"
 	"fmt"
+	mft "github.com/AlecRandazzo/GoFor-MFT-Parser"
 	log "github.com/sirupsen/logrus"
 	"os"
 )
@@ -20,28 +22,30 @@ func init() {
 	log.SetFormatter(&log.JSONFormatter{})
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.ErrorLevel)
+
 }
 
 func main() {
-	outFileName := "out.csv"
-	inFileName := "MFT"
+	inFileName := flag.String("mft", "", "Input MFT file to parse.")
+	outFileName := flag.String("output", "parsed_mft.csv", "Output file.")
+	bytesPerCluster := flag.Int64("c", 4096, "Bytes per cluster. This is typically 4096.")
+	flag.Parse()
 
-	outFile, err := os.Create(outFileName)
+	outFile, err := os.Create(*outFileName)
 	if err != nil {
-		err = fmt.Errorf("failed to create output file %s: %w", outFileName, err)
+		err = fmt.Errorf("failed to create output file %v: %v", outFileName, err)
 		return
 	}
 	defer outFile.Close()
 
-	inFile, err := os.Open(inFileName)
+	inFile, err := os.Open(*inFileName)
 	if err != nil {
-		err = fmt.Errorf("failed to open file %s: %w", inFileName, err)
+		err = fmt.Errorf("failed to open file %v: %v", inFileName, err)
 		return
 	}
 	defer inFile.Close()
-	//writer := mft.CsvWriter{
-	//	OutStream: outFile,
-	//}
-	//mft.ParseMFT(inFile, writer, 4096)
+
+	writer := mft.CsvResultWriter{}
+	mft.ParseMFT(inFile, &writer, outFile, *bytesPerCluster)
 
 }

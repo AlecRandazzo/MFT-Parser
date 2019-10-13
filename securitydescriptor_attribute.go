@@ -7,7 +7,7 @@
  *
  */
 
-package GoFor_MFT_Parser
+package mft
 
 //func (mftRecord *MasterFileTableRecord) ParseSecurityDescriptorAttribute(attributeBytes []byte) {
 //	const offsetUserSIDOffset = 0x04
