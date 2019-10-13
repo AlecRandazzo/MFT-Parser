@@ -1,4 +1,4 @@
-package GoFor_MFT_Parser
+package mft
 
 import (
 	"github.com/google/go-cmp/cmp"

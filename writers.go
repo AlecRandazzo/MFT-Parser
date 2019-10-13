@@ -7,7 +7,7 @@
  *
  */
 
-package GoFor_MFT_Parser
+package mft
 
 import (
 	"fmt"
@@ -16,15 +16,15 @@ import (
 	"sync"
 )
 
-// Interface for result writers to allow for output format extensibility.
+// ResultWriter interface for result writers to allow for output format extensibility.
 type ResultWriter interface {
 	ResultWriter(streamer io.Writer, outputChannel *chan UsefulMftFields, waitGroup *sync.WaitGroup)
 }
 
-// Receiver used with the ResultWriter method that would write the csv results to csv.
+// CsvResultWriter receiver used with the ResultWriter method that would write the csv results to csv.
 type CsvResultWriter struct{}
 
-// This method that would write the csv results to csv.
+// ResultWriter writes the results to csv.
 func (csvResultWriter *CsvResultWriter) ResultWriter(streamer io.Writer, outputChannel *chan UsefulMftFields, waitGroup *sync.WaitGroup) {
 	delimiter := "|"
 	csvHeader := []string{

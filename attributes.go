@@ -7,7 +7,7 @@
  *
  */
 
-package GoFor_MFT_Parser
+package mft
 
 import (
 	"encoding/binary"
@@ -18,11 +18,11 @@ import (
 // []byte alias containing bytes of a raw MFT record attribute.
 type rawAttribute []byte
 
-// Slice of rawAttribute []byte aliases. Used primarily as a method receiver for the parse() method.
+// RawAttributes contains a slice of rawAttribute []byte aliases. Used primarily as a method receiver for the parse() method.
 // See here for a handy list of attributes: https://flatcap.org/linux-ntfs/ntfs/attributes/index.html
 type RawAttributes []rawAttribute
 
-// Parses a slice of raw attributes and returns its filename, standard information, and dat attributes. It takes an argument for bytes per cluster (typically 4096) which is used for computing data run information in a data attributes.
+// Parse parses a slice of raw attributes and returns its filename, standard information, and dat attributes. It takes an argument for bytes per cluster (typically 4096) which is used for computing data run information in a data attributes.
 func (rawAttributes RawAttributes) Parse(bytesPerCluster int64) (fileNameAttributes FileNameAttributes, standardInformationAttribute StandardInformationAttribute, dataAttribute DataAttribute, err error) {
 	// Sanity check to make sure that the method received valid data
 	sizeOfRawAttributesSlice := len(rawAttributes)
@@ -94,7 +94,7 @@ func (rawAttributes RawAttributes) Parse(bytesPerCluster int64) (fileNameAttribu
 	return
 }
 
-// Returns the attribute bytes from an unparsed mft record which is the method receiver. It takes recordHeader as an argument since the record header contains the offset for the start of the attributes.
+// GetRawAttributes returns the attribute bytes from an unparsed mft record which is the method receiver. It takes recordHeader as an argument since the record header contains the offset for the start of the attributes.
 func (rawMftRecord RawMasterFileTableRecord) GetRawAttributes(recordHeader RecordHeader) (rawAttributes RawAttributes, err error) {
 	// Doing some sanity checks
 	if len(rawMftRecord) == 0 {

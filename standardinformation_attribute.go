@@ -7,7 +7,7 @@
  *
  */
 
-package GoFor_MFT_Parser
+package mft
 
 import (
 	"errors"
@@ -15,10 +15,10 @@ import (
 	"time"
 )
 
-// []byte alias for raw standard information attribute. Used with the Parse() method.
+// RawStandardInformationAttribute is a []byte alias for raw standard information attribute. Used with the Parse() method.
 type RawStandardInformationAttribute []byte
 
-// Contains information from a parsed standard information attribute.
+// StandardInformationAttribute contains information from a parsed standard information attribute.
 type StandardInformationAttribute struct {
 	SiCreated    time.Time
 	SiModified   time.Time
@@ -27,7 +27,7 @@ type StandardInformationAttribute struct {
 	FlagResident bool
 }
 
-// Parses the raw standard information attribute receiver and returns a parsed standard information attribute.
+// Parse parses the raw standard information attribute receiver and returns a parsed standard information attribute.
 func (rawStandardInformationAttribute RawStandardInformationAttribute) Parse() (standardInformationAttribute StandardInformationAttribute, err error) {
 	const offsetResidentFlag = 0x08
 

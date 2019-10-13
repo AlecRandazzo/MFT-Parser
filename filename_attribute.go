@@ -7,7 +7,7 @@
  *
  */
 
-package GoFor_MFT_Parser
+package mft
 
 import (
 	"encoding/binary"
@@ -17,12 +17,12 @@ import (
 	"time"
 )
 
-// Slice that contains a list of filename attributes.
+// FileNameAttributes is a slice that contains a list of filename attributes.
 type FileNameAttributes []FileNameAttribute
 
 type flagResidency bool
 
-// Contains information about a filename attribute.
+// FileNameAttribute contains information about a filename attribute.
 type FileNameAttribute struct {
 	FnCreated               time.Time
 	FnModified              time.Time
@@ -46,7 +46,7 @@ type nameLength struct {
 	namedSize byte
 }
 
-// Contains possible filename flags a file may have.
+// FileNameFlags contains possible filename flags a file may have.
 type FileNameFlags struct {
 	ReadOnly          bool
 	Hidden            bool
@@ -65,19 +65,19 @@ type FileNameFlags struct {
 	IndexView         bool
 }
 
-// []byte alias for raw filename flags. Used with the Parse() method.
+// RawFilenameFlags is a []byte alias for raw filename flags. Used with the Parse() method.
 type RawFilenameFlags []byte
 
-// byte alias for raw residency flag. Used with the Parse() method.
+// RawResidencyFlag is a byte alias for raw residency flag. Used with the Parse() method.
 type RawResidencyFlag byte
 
-// []byte alias for raw filename attribute. Used with the Parse() method.
+// RawFileNameAttribute is a []byte alias for raw filename attribute. Used with the Parse() method.
 type RawFileNameAttribute []byte
 
-// byte alias for raw filename namespace flag. Used with the Parse() method.
+// RawFilenameNameSpaceFlag is a byte alias for raw filename namespace flag. Used with the Parse() method.
 type RawFilenameNameSpaceFlag byte
 
-// Parses the raw filename attribute receiver and returns a parsed filename attribute.
+// Parse parses the raw filename attribute receiver and returns a parsed filename attribute.
 func (rawFileNameAttribute RawFileNameAttribute) Parse() (filenameAttribute FileNameAttribute, err error) {
 	const offsetAttributeSize = 0x04
 	const lengthAttributeSize = 0x04
@@ -150,7 +150,7 @@ func (rawFileNameAttribute RawFileNameAttribute) Parse() (filenameAttribute File
 	return
 }
 
-// Parses the raw residency flag receiver and returns a flag residency value.
+// Parse parses the raw residency flag receiver and returns a flag residency value.
 func (byteToCheck RawResidencyFlag) Parse() (flagResidency bool) {
 	switch byteToCheck {
 	case 0x00:
@@ -161,7 +161,7 @@ func (byteToCheck RawResidencyFlag) Parse() (flagResidency bool) {
 	return
 }
 
-// Parses the raw file namespace flag receiver and returns a file namespace value.
+// Parse parses the raw file namespace flag receiver and returns a file namespace value.
 func (fileNamespaceFlag RawFilenameNameSpaceFlag) Parse() (fileNameSpace string) {
 	switch fileNamespaceFlag {
 	case 0x00:
@@ -179,7 +179,7 @@ func (fileNamespaceFlag RawFilenameNameSpaceFlag) Parse() (fileNameSpace string)
 	return
 }
 
-// Parses the raw filename flags receiver and returns filename flags.
+// Parse parses the raw filename flags receiver and returns filename flags.
 func (flagBytes RawFilenameFlags) Parse() (fileNameFlags FileNameFlags) {
 	unparsedFlags := binary.LittleEndian.Uint32(flagBytes)
 	//init values

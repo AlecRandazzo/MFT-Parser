@@ -7,7 +7,7 @@
  *
  */
 
-package GoFor_MFT_Parser
+package mft
 
 import (
 	"bytes"
@@ -20,7 +20,7 @@ import (
 	"time"
 )
 
-// Contains information on a parsed MFT record
+// MasterFileTableRecord contains information on a parsed MFT record
 type MasterFileTableRecord struct {
 	RecordHeader                  RecordHeader
 	StandardInformationAttributes StandardInformationAttribute
@@ -30,7 +30,7 @@ type MasterFileTableRecord struct {
 
 //TODO fill out these tags for json, csv, bson, and protobuf
 
-// Contains a downselected list of fields that are actually valuable to an analyst. This is the data that is written after parsing an MFT.
+// UsefulMftFields contains a downselected list of fields that are actually valuable to an analyst. This is the data that is written after parsing an MFT.
 type UsefulMftFields struct {
 	RecordNumber     uint32    `json:"RecordNumber,number"`
 	FilePath         string    `json:"FilePath,string"`
@@ -52,10 +52,10 @@ type UsefulMftFields struct {
 	PhysicalFileSize uint64    `json:"PhysicalFileSize,number"`
 }
 
-// []byte alias for raw mft record. Used with the Parse() method.
+// RawMasterFileTableRecord is a []byte alias for raw mft record. Used with the Parse() method.
 type RawMasterFileTableRecord []byte
 
-// Takes an input file os.File and writes the results to the io.Writer. The format of the data sent to the io.Writer is dependent on what ResultWriter is used. The bytes per cluster input is typically 4096
+// ParseMFT takes an input file os.File and writes the results to the io.Writer. The format of the data sent to the io.Writer is dependent on what ResultWriter is used. The bytes per cluster input is typically 4096
 func ParseMFT(inputFile *os.File, writer ResultWriter, streamer io.Writer, bytesPerCluster int64) {
 	directoryTree, _ := BuildDirectoryTree(inputFile)
 	outputChannel := make(chan UsefulMftFields, 100)
@@ -69,7 +69,7 @@ func ParseMFT(inputFile *os.File, writer ResultWriter, streamer io.Writer, bytes
 	return
 }
 
-// Parses a stream of mft record bytes and sends the results to an output channel. Records from this output channel are popped off by the ResultWriter used in the ParseMFT() method.
+// ParseMftRecords parses a stream of mft record bytes and sends the results to an output channel. Records from this output channel are popped off by the ResultWriter used in the ParseMFT() method.
 func ParseMftRecords(reader io.Reader, bytesPerCluster int64, directoryTree DirectoryTree, outputChannel *chan UsefulMftFields) {
 	for {
 		buffer := make([]byte, 1024)
@@ -92,7 +92,7 @@ func ParseMftRecords(reader io.Reader, bytesPerCluster int64, directoryTree Dire
 	return
 }
 
-// This method will pull out and return just the MFT record fields that are useful to an analyst.
+// GetUsefulMftFields will pull out and return just the MFT record fields that are useful to an analyst.
 func GetUsefulMftFields(mftRecord MasterFileTableRecord, directoryTree DirectoryTree) (useFulMftFields UsefulMftFields) {
 	for _, record := range mftRecord.FileNameAttributes {
 		if strings.Contains(record.FileNamespace, "WIN32") || strings.Contains(record.FileNamespace, "POSIX") {
@@ -127,7 +127,7 @@ func GetUsefulMftFields(mftRecord MasterFileTableRecord, directoryTree Directory
 	return
 }
 
-// Parses the raw MFT record receiver and returns a parsed mft record.
+// Parse parses the raw MFT record receiver and returns a parsed mft record.
 func (rawMftRecord RawMasterFileTableRecord) Parse(bytesPerCluster int64) (mftRecord MasterFileTableRecord, err error) {
 	// Sanity checks
 	sizeOfRawMftRecord := len(rawMftRecord)
