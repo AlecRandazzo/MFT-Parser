@@ -29,6 +29,7 @@ func main() {
 	inFileName := flag.String("mft", "", "Input MFT file to parse.")
 	outFileName := flag.String("output", "parsed_mft.csv", "Output file.")
 	bytesPerCluster := flag.Int64("c", 4096, "Bytes per cluster. This is typically 4096.")
+	volumeLetter := flag.String("volume", "", "Volume letter. This will prepend the volume letter to all directory paths.")
 	flag.Parse()
 
 	outFile, err := os.Create(*outFileName)
@@ -46,6 +47,6 @@ func main() {
 	defer inFile.Close()
 
 	writer := mft.CsvResultWriter{}
-	mft.ParseMFT(inFile, &writer, outFile, *bytesPerCluster)
+	mft.ParseMFT(*volumeLetter, inFile, &writer, outFile, *bytesPerCluster)
 
 }

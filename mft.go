@@ -56,8 +56,8 @@ type UsefulMftFields struct {
 type RawMasterFileTableRecord []byte
 
 // ParseMFT takes an input file os.File and writes the results to the io.Writer. The format of the data sent to the io.Writer is dependent on what ResultWriter is used. The bytes per cluster input is typically 4096
-func ParseMFT(inputFile *os.File, writer ResultWriter, streamer io.Writer, bytesPerCluster int64) {
-	directoryTree, _ := BuildDirectoryTree(inputFile)
+func ParseMFT(volumeLetter string, inputFile *os.File, writer ResultWriter, streamer io.Writer, bytesPerCluster int64) {
+	directoryTree, _ := BuildDirectoryTree(inputFile, volumeLetter)
 	outputChannel := make(chan UsefulMftFields, 100)
 	var waitGroup sync.WaitGroup
 	waitGroup.Add(1)

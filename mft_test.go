@@ -571,6 +571,7 @@ func TestParseMFT(t *testing.T) {
 		writer          WriteToSlice
 		streamer        io.Writer
 		bytesPerCluster int64
+		volumeLetter    string
 	}
 	tests := []struct {
 		name     string
@@ -584,13 +585,14 @@ func TestParseMFT(t *testing.T) {
 				fileHandle:      nil,
 				writer:          nil,
 				bytesPerCluster: 4096,
+				volumeLetter:    "C",
 			},
 			testFile: filepath.FromSlash("./test/testdata/mft-lite"),
 			want: WriteToSlice{
 				0: {
 					RecordNumber:     0,
-					FilePath:         "\\",
-					FullPath:         "\\$MFT",
+					FilePath:         "C:\\",
+					FullPath:         "C:\\$MFT",
 					FileName:         "$MFT",
 					SystemFlag:       true,
 					HiddenFlag:       true,
@@ -609,8 +611,8 @@ func TestParseMFT(t *testing.T) {
 				},
 				1: {
 					RecordNumber:     1,
-					FilePath:         "\\",
-					FullPath:         "\\$MFTMirr",
+					FilePath:         "C:\\",
+					FullPath:         "C:\\$MFTMirr",
 					FileName:         "$MFTMirr",
 					SystemFlag:       true,
 					HiddenFlag:       true,
@@ -629,8 +631,8 @@ func TestParseMFT(t *testing.T) {
 				},
 				2: {
 					RecordNumber:     2,
-					FilePath:         "\\",
-					FullPath:         "\\$LogFile",
+					FilePath:         "C:\\",
+					FullPath:         "C:\\$LogFile",
 					FileName:         "$LogFile",
 					SystemFlag:       true,
 					HiddenFlag:       true,
@@ -649,8 +651,8 @@ func TestParseMFT(t *testing.T) {
 				},
 				3: {
 					RecordNumber:     3,
-					FilePath:         "\\",
-					FullPath:         "\\$Volume",
+					FilePath:         "C:\\",
+					FullPath:         "C:\\$Volume",
 					FileName:         "$Volume",
 					SystemFlag:       true,
 					HiddenFlag:       true,
@@ -669,8 +671,8 @@ func TestParseMFT(t *testing.T) {
 				},
 				4: {
 					RecordNumber:     4,
-					FilePath:         "\\",
-					FullPath:         "\\$AttrDef",
+					FilePath:         "C:\\",
+					FullPath:         "C:\\$AttrDef",
 					FileName:         "$AttrDef",
 					SystemFlag:       true,
 					HiddenFlag:       true,
@@ -689,8 +691,8 @@ func TestParseMFT(t *testing.T) {
 				},
 				5: {
 					RecordNumber:     5,
-					FilePath:         "\\",
-					FullPath:         "\\.",
+					FilePath:         "C:\\",
+					FullPath:         "C:\\.",
 					FileName:         ".",
 					SystemFlag:       true,
 					HiddenFlag:       true,
@@ -734,7 +736,7 @@ func TestParseMFT(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 
 			tt.args.fileHandle, _ = os.Open(tt.testFile)
-			ParseMFT(tt.args.fileHandle, &tt.args.writer, tt.args.streamer, tt.args.bytesPerCluster)
+			ParseMFT(tt.args.volumeLetter, tt.args.fileHandle, &tt.args.writer, tt.args.streamer, tt.args.bytesPerCluster)
 			if !reflect.DeepEqual(tt.args.writer, tt.want) {
 				t.Errorf(cmp.Diff(tt.args.writer, tt.want))
 			}
