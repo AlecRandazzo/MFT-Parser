@@ -14,6 +14,7 @@ import (
 	"fmt"
 	"io"
 	"strings"
+	"unicode"
 )
 
 type directory struct {
@@ -116,7 +117,12 @@ func BuildUnresolvedDirectoryTree(reader io.Reader) (unresolvedDirectoryTree Unr
 }
 
 // Resolve combines a running list of directories from a channel in order to create the systems directory trees.
-func (unresolvedDirectoryTree UnresolvedDirectoryTree) Resolve() (directoryTree DirectoryTree) {
+func (unresolvedDirectoryTree UnresolvedDirectoryTree) Resolve(volumeLetter string) (directoryTree DirectoryTree, err error) {
+	err = volumeLetterCheck(volumeLetter)
+	if err != nil {
+		err = fmt.Errorf("failed to build directory tree due to invalid volume letter: %v", err)
+		return
+	}
 	directoryTree = make(DirectoryTree)
 	for recordNumber, directoryMetadata := range unresolvedDirectoryTree {
 		// Sanity check
@@ -129,20 +135,20 @@ func (unresolvedDirectoryTree UnresolvedDirectoryTree) Resolve() (directoryTree 
 		for {
 			if _, ok := unresolvedDirectoryTree[parentRecordNumberPointer]; ok {
 				if recordNumber == 5 {
-					mappingDirectory = "\\"
+					mappingDirectory = fmt.Sprintf("%s:\\", volumeLetter)
 					directoryTree[recordNumber] = mappingDirectory
 					break
 				}
 				if parentRecordNumberPointer == 5 {
-					mappingDirectory = "\\" + mappingDirectory
+					mappingDirectory = fmt.Sprintf("%s:\\%s", volumeLetter, mappingDirectory)
 					directoryTree[recordNumber] = mappingDirectory
 					break
 				}
-				mappingDirectory = unresolvedDirectoryTree[parentRecordNumberPointer].directoryName + "\\" + mappingDirectory
+				mappingDirectory = fmt.Sprintf("%s\\%s", unresolvedDirectoryTree[parentRecordNumberPointer].directoryName, mappingDirectory)
 				parentRecordNumberPointer = unresolvedDirectoryTree[parentRecordNumberPointer].parentRecordNumber
 				continue
 			}
-			directoryTree[recordNumber] = "$ORPHANFILE\\" + mappingDirectory
+			directoryTree[recordNumber] = fmt.Sprintf("%s:\\$ORPHANFILE\\%s", volumeLetter, mappingDirectory)
 			break
 		}
 	}
@@ -150,9 +156,30 @@ func (unresolvedDirectoryTree UnresolvedDirectoryTree) Resolve() (directoryTree 
 }
 
 // BuildDirectoryTree takes an MFT and creates a directory tree where the slice keys are the mft record number of the directory. This record number is importable because files will reference it as its parent mft record number.
-func BuildDirectoryTree(reader io.Reader) (directoryTree DirectoryTree, err error) {
+func BuildDirectoryTree(reader io.Reader, volumeLetter string) (directoryTree DirectoryTree, err error) {
+	err = volumeLetterCheck(volumeLetter)
+	if err != nil {
+		err = fmt.Errorf("failed to build directory tree due to invalid volume letter: %v", err)
+		return
+	}
 	directoryTree = make(DirectoryTree)
 	unresolvedDirectoryTree, _ := BuildUnresolvedDirectoryTree(reader)
-	directoryTree = unresolvedDirectoryTree.Resolve()
+	directoryTree, _ = unresolvedDirectoryTree.Resolve(volumeLetter)
+	return
+}
+
+func volumeLetterCheck(volumeLetter string) (err error) {
+	volumeLetterRune := []rune(volumeLetter)
+	if volumeLetter == "" {
+		err = errors.New("volume letter was blank")
+		return
+	} else if len(volumeLetterRune) != 1 {
+		err = errors.New("volume letter contained more than one character")
+		return
+	} else if !unicode.IsLetter(volumeLetterRune[0]) {
+		err = errors.New("volume letter was not a letter")
+		return
+	}
+	err = nil
 	return
 }
