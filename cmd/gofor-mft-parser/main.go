@@ -34,14 +34,14 @@ func main() {
 
 	outFile, err := os.Create(*outFileName)
 	if err != nil {
-		err = fmt.Errorf("failed to create output file %s: %w", outFileName, err)
+		err = fmt.Errorf("failed to create output file %s: %w", *outFileName, err)
 		return
 	}
 	defer outFile.Close()
 
 	inFile, err := os.Open(*inFileName)
 	if err != nil {
-		err = fmt.Errorf("failed to open file %s: %w", inFileName, err)
+		err = fmt.Errorf("failed to open file %s: %w", *inFileName, err)
 		return
 	}
 	defer inFile.Close()
