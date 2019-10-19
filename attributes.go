@@ -110,7 +110,7 @@ func (rawMftRecord RawMasterFileTableRecord) GetRawAttributes(recordHeader Recor
 	const lengthAttributeSize = 0x04
 
 	// Init variable that tracks how far to the next Attribute
-	var distanceToNextAttribute uint16 = 0
+	var distanceToNextAttribute uint16
 	offset := recordHeader.AttributesOffset
 	sizeOfRawMftRecord := len(rawMftRecord)
 

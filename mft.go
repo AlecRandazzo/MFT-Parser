@@ -141,11 +141,11 @@ func (rawMftRecord RawMasterFileTableRecord) Parse(bytesPerCluster int64) (mftRe
 	}
 	result, err := rawMftRecord.IsThisAnMftRecord()
 	if err != nil {
-		err = fmt.Errorf("failed to parse the raw mft record: %v", err)
+		err = fmt.Errorf("failed to parse the raw mft record: %w", err)
 		return
 	}
 	if result == false {
-		err = fmt.Errorf("this is not an mft record: %v", err)
+		err = fmt.Errorf("this is not an mft record: %w", err)
 		return
 	}
 
@@ -153,7 +153,7 @@ func (rawMftRecord RawMasterFileTableRecord) Parse(bytesPerCluster int64) (mftRe
 
 	rawRecordHeader, err := rawMftRecord.GetRawRecordHeader()
 	if err != nil {
-		err = fmt.Errorf("failed to parse MFT record header: %v", err)
+		err = fmt.Errorf("failed to parse MFT record header: %w", err)
 		return
 	}
 
@@ -162,7 +162,7 @@ func (rawMftRecord RawMasterFileTableRecord) Parse(bytesPerCluster int64) (mftRe
 	var rawAttributes RawAttributes
 	rawAttributes, err = rawMftRecord.GetRawAttributes(mftRecord.RecordHeader)
 	if err != nil {
-		err = fmt.Errorf("failed to get raw data attributes: %v", err)
+		err = fmt.Errorf("failed to get raw data attributes: %w", err)
 		return
 	}
 
