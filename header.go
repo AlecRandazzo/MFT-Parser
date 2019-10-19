@@ -42,7 +42,7 @@ func (rawRecordHeader RawRecordHeader) Parse() (recordHeader RecordHeader, err e
 		err = errors.New("RecordHeader.parse() received nil bytes")
 		return
 	} else if sizeOfRawRecordHeader != 0x38 {
-		err = fmt.Errorf("RawRecordHeader.parse() expected 38 bytes, instead it received %v", sizeOfRawRecordHeader)
+		err = fmt.Errorf("RawRecordHeader.parse() expected 38 bytes, instead it received %d", sizeOfRawRecordHeader)
 		return
 	}
 
@@ -66,7 +66,7 @@ func (rawRecordHeader RawRecordHeader) GetRawRecordHeaderFlags() (rawRecordHeade
 		err = errors.New("received a nil bytes")
 		return
 	} else if sizeOfRawRecordHeader < 0x16 {
-		err = fmt.Errorf("expected at least 16 bytes, instead received %v", sizeOfRawRecordHeader)
+		err = fmt.Errorf("expected at least 16 bytes, instead received %d", sizeOfRawRecordHeader)
 		return
 	}
 
@@ -102,7 +102,7 @@ func (rawMftRecord RawMasterFileTableRecord) GetRawRecordHeader() (rawRecordHead
 		err = errors.New("received nil bytes")
 		return
 	} else if sizeOfRawMftRecord < 0x38 {
-		err = fmt.Errorf("expected at least 38 bytes, instead received %v", sizeOfRawMftRecord)
+		err = fmt.Errorf("expected at least 38 bytes, instead received %d", sizeOfRawMftRecord)
 		return
 	}
 

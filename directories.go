@@ -67,7 +67,7 @@ func convertRawMFTRecordToDirectory(rawMftRecord RawMasterFileTableRecord) (dire
 	// Get record header bytes
 	rawRecordHeader, err := rawMftRecord.GetRawRecordHeader()
 	if err != nil {
-		err = fmt.Errorf("failed to parse get record header: %v", err)
+		err = fmt.Errorf("failed to parse get record header: %w", err)
 		return
 	}
 
@@ -77,7 +77,7 @@ func convertRawMFTRecordToDirectory(rawMftRecord RawMasterFileTableRecord) (dire
 	// Get the raw mft attributes
 	rawAttributes, err := rawMftRecord.GetRawAttributes(recordHeader)
 	if err != nil {
-		err = fmt.Errorf("failed to get raw attributes: %v", err)
+		err = fmt.Errorf("failed to get raw attributes: %w", err)
 		return
 	}
 	doesntMatter := int64(4096)
@@ -120,7 +120,7 @@ func BuildUnresolvedDirectoryTree(reader io.Reader) (unresolvedDirectoryTree Unr
 func (unresolvedDirectoryTree UnresolvedDirectoryTree) Resolve(volumeLetter string) (directoryTree DirectoryTree, err error) {
 	err = volumeLetterCheck(volumeLetter)
 	if err != nil {
-		err = fmt.Errorf("failed to build directory tree due to invalid volume letter: %v", err)
+		err = fmt.Errorf("failed to build directory tree due to invalid volume letter: %w", err)
 		return
 	}
 	directoryTree = make(DirectoryTree)
@@ -159,7 +159,7 @@ func (unresolvedDirectoryTree UnresolvedDirectoryTree) Resolve(volumeLetter stri
 func BuildDirectoryTree(reader io.Reader, volumeLetter string) (directoryTree DirectoryTree, err error) {
 	err = volumeLetterCheck(volumeLetter)
 	if err != nil {
-		err = fmt.Errorf("failed to build directory tree due to invalid volume letter: %v", err)
+		err = fmt.Errorf("failed to build directory tree due to invalid volume letter: %w", err)
 		return
 	}
 	directoryTree = make(DirectoryTree)

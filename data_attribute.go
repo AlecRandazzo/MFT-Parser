@@ -92,7 +92,7 @@ func (rawDataAttribute RawDataAttribute) Parse(bytesPerCluster int64) (nonReside
 		copy(rawResidentDataAttribute, rawDataAttribute)
 		residentDataAttribute, err = rawResidentDataAttribute.Parse()
 		if err != nil {
-			err = fmt.Errorf("failed to parse resident data attribute: %v", err)
+			err = fmt.Errorf("failed to parse resident data attribute: %w", err)
 			return
 		}
 		return
@@ -102,7 +102,7 @@ func (rawDataAttribute RawDataAttribute) Parse(bytesPerCluster int64) (nonReside
 	copy(rawNonResidentDataAttribute, rawDataAttribute)
 	nonResidentDataAttribute, err = rawNonResidentDataAttribute.Parse(bytesPerCluster)
 	if err != nil {
-		err = fmt.Errorf("failed to parse non resident data attribute: %v", err)
+		err = fmt.Errorf("failed to parse non resident data attribute: %w", err)
 		return
 	}
 
@@ -118,7 +118,7 @@ func (rawResidentDataAttribute RawResidentDataAttribute) Parse() (residentDataAt
 		err = errors.New("received nil bytes")
 		return
 	} else if sizeOfRawResidentDataAttribute < offsetResidentData {
-		err = fmt.Errorf("expected to receive at least 18 bytes, but received %v", sizeOfRawResidentDataAttribute)
+		err = fmt.Errorf("expected to receive at least 18 bytes, but received %d", sizeOfRawResidentDataAttribute)
 		return
 	}
 	sizeOfResidentDataAttribute := len(rawResidentDataAttribute[offsetResidentData:])
@@ -136,7 +136,7 @@ func (rawNonResidentDataAttribute RawNonResidentDataAttribute) Parse(bytesPerClu
 		err = errors.New("received nil bytes")
 		return
 	} else if sizeOfRawNonResidentDataAttribute <= offsetDataRunOffset {
-		err = fmt.Errorf("expected to receive at least 18 bytes, but received %v", sizeOfRawNonResidentDataAttribute)
+		err = fmt.Errorf("expected to receive at least 18 bytes, but received %d", sizeOfRawNonResidentDataAttribute)
 		return
 	}
 
