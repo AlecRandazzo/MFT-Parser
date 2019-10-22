@@ -21,7 +21,7 @@ func TestRawRecordHeaderFlag_Parse(t *testing.T) {
 			},
 		},
 		{
-			name:                "directory 0x03",
+			name:                "UnResolvedDirectory 0x03",
 			rawRecordHeaderFlag: 0x03,
 			want: RecordHeaderFlags{
 				FlagDeleted:   false,

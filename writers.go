@@ -29,7 +29,7 @@ func (csvResultWriter *CsvResultWriter) ResultWriter(streamer io.Writer, outputC
 	delimiter := "|"
 	csvHeader := []string{
 		"Record Number",
-		"Directory",
+		"UnResolvedDirectory",
 		"System File",
 		"Hidden",
 		"Read-only",
@@ -66,12 +66,12 @@ func (csvResultWriter *CsvResultWriter) ResultWriter(streamer io.Writer, outputC
 		}
 		csvRow := []string{
 			fmt.Sprint(file.RecordNumber),                  //Record Number
-			strconv.FormatBool(file.DirectoryFlag),         //directory Flag
+			strconv.FormatBool(file.DirectoryFlag),         //UnResolvedDirectory Flag
 			strconv.FormatBool(file.SystemFlag),            //System file flag
 			strconv.FormatBool(file.HiddenFlag),            //Hidden flag
 			strconv.FormatBool(file.ReadOnlyFlag),          //Read only flag
 			strconv.FormatBool(file.DeletedFlag),           //Deleted Flag
-			file.FilePath,                                  //File directory
+			file.FilePath,                                  //File UnResolvedDirectory
 			file.FileName,                                  //File Name
 			strconv.FormatUint(file.PhysicalFileSize, 10),  // File Size
 			file.SiCreated.Format("2006-01-02T15:04:05Z"),  //File Created
