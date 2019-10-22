@@ -27,10 +27,10 @@ type UnResolvedDirectory struct {
 // UnresolvedDirectoryTree contains a slice of directories that need to be joined to create a UnResolvedDirectory tree.
 type UnresolvedDirectoryTree map[uint64]UnResolvedDirectory
 
-// DirectoryTree contains a UnResolvedDirectory tree.
+// DirectoryTree contains a directory tree.
 type DirectoryTree map[uint64]string
 
-// IsThisADirectory will quickly check the bytes of an MFT record to determine if it is a UnResolvedDirectory or not.
+// IsThisADirectory will quickly check the bytes of an MFT record to determine if it is a directory or not.
 func (rawMftRecord RawMasterFileTableRecord) IsThisADirectory() (result bool, err error) {
 	// Sanity checks that the method received good data
 	const offsetRecordFlag = 0x16
@@ -47,7 +47,7 @@ func (rawMftRecord RawMasterFileTableRecord) IsThisADirectory() (result bool, er
 		return
 	}
 
-	// Skip straight to the offset where the UnResolvedDirectory flag resides and check if it has the UnResolvedDirectory flag or not.
+	// Skip straight to the offset where the directory flag resides and check if it has the directory flag or not.
 	recordFlag := rawMftRecord[offsetRecordFlag]
 	if recordFlag == codeDirectory {
 		result = true
@@ -59,10 +59,10 @@ func (rawMftRecord RawMasterFileTableRecord) IsThisADirectory() (result bool, er
 
 // ConvertRawMFTRecordToDirectory will take a raw MFT record that is a directory and return the parsed MFT record for it.
 func ConvertRawMFTRecordToDirectory(rawMftRecord RawMasterFileTableRecord) (directory UnResolvedDirectory, err error) {
-	// Sanity checks that the raw mft record is a UnResolvedDirectory or not
+	// Sanity checks that the raw mft record is a directory or not
 	result, err := rawMftRecord.IsThisADirectory()
 	if result == false {
-		err = errors.New("this is not a UnResolvedDirectory")
+		err = errors.New("this is not a directory")
 		return
 	}
 
@@ -84,7 +84,7 @@ func ConvertRawMFTRecordToDirectory(rawMftRecord RawMasterFileTableRecord) (dire
 	}
 	doesntMatter := int64(4096)
 
-	// Find the filename attribute and parse it for its record number, UnResolvedDirectory name, and parent record number.
+	// Find the filename attribute and parse it for its record number, directory name, and parent record number.
 	fileNameAttributes, _, _, err := rawAttributes.Parse(doesntMatter)
 	for _, fileNameAttribute := range fileNameAttributes {
 		if strings.Contains(fileNameAttribute.FileNamespace, "WIN32") == true || strings.Contains(fileNameAttribute.FileNamespace, "POSIX") {
@@ -118,11 +118,11 @@ func BuildUnresolvedDirectoryTree(reader io.Reader) (unresolvedDirectoryTree Unr
 	return
 }
 
-// Resolve combines a running list of directories from a channel in order to create the systems UnResolvedDirectory trees.
+// Resolve combines a running list of directories from a channel in order to create the systems directory trees.
 func (unresolvedDirectoryTree UnresolvedDirectoryTree) Resolve(volumeLetter string) (directoryTree DirectoryTree, err error) {
 	err = volumeLetterCheck(volumeLetter)
 	if err != nil {
-		err = fmt.Errorf("failed to build UnResolvedDirectory tree due to invalid volume letter: %w", err)
+		err = fmt.Errorf("failed to build directory tree due to invalid volume letter: %w", err)
 		return
 	}
 	directoryTree = make(DirectoryTree)
@@ -157,11 +157,11 @@ func (unresolvedDirectoryTree UnresolvedDirectoryTree) Resolve(volumeLetter stri
 	return
 }
 
-// BuildDirectoryTree takes an MFT and creates a UnResolvedDirectory tree where the slice keys are the mft record number of the UnResolvedDirectory. This record number is importable because files will reference it as its parent mft record number.
+// BuildDirectoryTree takes an MFT and creates a directory tree where the slice keys are the mft record number of the UnResolvedDirectory. This record number is importable because files will reference it as its parent mft record number.
 func BuildDirectoryTree(reader io.Reader, volumeLetter string) (directoryTree DirectoryTree, err error) {
 	err = volumeLetterCheck(volumeLetter)
 	if err != nil {
-		err = fmt.Errorf("failed to build UnResolvedDirectory tree due to invalid volume letter: %w", err)
+		err = fmt.Errorf("failed to build directory tree due to invalid volume letter: %w", err)
 		return
 	}
 	directoryTree = make(DirectoryTree)
