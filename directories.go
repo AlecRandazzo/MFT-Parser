@@ -85,7 +85,7 @@ func ConvertRawMFTRecordToDirectory(rawMftRecord RawMasterFileTableRecord) (dire
 	doesntMatter := int64(4096)
 
 	// Find the filename attribute and parse it for its record number, directory name, and parent record number.
-	fileNameAttributes, _, _, err := rawAttributes.Parse(doesntMatter)
+	fileNameAttributes, _, _, _, err := rawAttributes.Parse(doesntMatter)
 	for _, fileNameAttribute := range fileNameAttributes {
 		if strings.Contains(fileNameAttribute.FileNamespace, "WIN32") == true || strings.Contains(fileNameAttribute.FileNamespace, "POSIX") {
 			directory.RecordNumber = uint64(recordHeader.RecordNumber)
