@@ -26,6 +26,7 @@ type MasterFileTableRecord struct {
 	StandardInformationAttributes StandardInformationAttribute
 	FileNameAttributes            []FileNameAttribute
 	DataAttribute                 DataAttribute
+	AttributeList                 AttributeListAttributes
 }
 
 //TODO fill out these tags for json, csv, bson, and protobuf
@@ -166,7 +167,7 @@ func (rawMftRecord RawMasterFileTableRecord) Parse(bytesPerCluster int64) (mftRe
 		return
 	}
 
-	mftRecord.FileNameAttributes, mftRecord.StandardInformationAttributes, mftRecord.DataAttribute, _ = rawAttributes.Parse(bytesPerCluster)
+	mftRecord.FileNameAttributes, mftRecord.StandardInformationAttributes, mftRecord.DataAttribute, mftRecord.AttributeList, _ = rawAttributes.Parse(bytesPerCluster)
 	return
 }
 

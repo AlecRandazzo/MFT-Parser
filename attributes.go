@@ -23,7 +23,7 @@ type rawAttribute []byte
 type RawAttributes []rawAttribute
 
 // Parse parses a slice of raw attributes and returns its filename, standard information, and dat attributes. It takes an argument for bytes per cluster (typically 4096) which is used for computing data run information in a data attributes.
-func (rawAttributes RawAttributes) Parse(bytesPerCluster int64) (fileNameAttributes FileNameAttributes, standardInformationAttribute StandardInformationAttribute, dataAttribute DataAttribute, err error) {
+func (rawAttributes RawAttributes) Parse(bytesPerCluster int64) (fileNameAttributes FileNameAttributes, standardInformationAttribute StandardInformationAttribute, dataAttribute DataAttribute, attributeListAttributes AttributeListAttributes, err error) {
 	// Sanity check to make sure that the method received valid data
 	sizeOfRawAttributesSlice := len(rawAttributes)
 	if sizeOfRawAttributesSlice == 0 {
@@ -36,6 +36,7 @@ func (rawAttributes RawAttributes) Parse(bytesPerCluster int64) (fileNameAttribu
 
 	// These constants are the "magic number" aka first byte for each type of attribute.
 	const codeStandardInformation = 0x10
+	const codeattributeList = 0x20
 	const codeFileName = 0x30
 	const codeData = 0x80
 
@@ -87,6 +88,15 @@ func (rawAttributes RawAttributes) Parse(bytesPerCluster int64) (fileNameAttribu
 				fileNameAttributes = nil
 				standardInformationAttribute = StandardInformationAttribute{}
 				dataAttribute = DataAttribute{}
+				return
+			}
+		case codeattributeList:
+			rawAttributeListAttribute := RawAttributeListAttribute(make([]byte, len(rawAttribute)))
+			copy(rawAttributeListAttribute, rawAttribute)
+			attributeListAttributes, err = rawAttributeListAttribute.Parse()
+			if err != nil {
+				err = fmt.Errorf("failed to get attribute list Attribute %w", err)
+				attributeListAttributes = AttributeListAttributes{}
 				return
 			}
 		}
