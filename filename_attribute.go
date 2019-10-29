@@ -31,7 +31,7 @@ type FileNameAttribute struct {
 	flagResident            bool
 	nameLength              nameLength
 	attributeSize           uint32
-	ParentDirRecordNumber   uint64
+	ParentDirRecordNumber   uint32
 	parentDirSequenceNumber uint16
 	LogicalFileSize         uint64
 	PhysicalFileSize        uint64
@@ -85,7 +85,7 @@ func (rawFileNameAttribute RawFileNameAttribute) Parse() (filenameAttribute File
 	const offsetResidentFlag = 0x08
 
 	const offsetParentRecordNumber = 0x18
-	const lengthParentRecordNumber = 0x06
+	const lengthParentRecordNumber = 0x04
 
 	const offsetParentDirSequenceNumber = 0x1e
 	const lengthParentDirSequenceNumber = 0x02
@@ -129,7 +129,7 @@ func (rawFileNameAttribute RawFileNameAttribute) Parse() (filenameAttribute File
 		return
 	}
 	filenameAttribute.attributeSize, _ = bin.LittleEndianBinaryToUInt32(rawFileNameAttribute[offsetAttributeSize : offsetAttributeSize+lengthAttributeSize])
-	filenameAttribute.ParentDirRecordNumber, _ = bin.LittleEndianBinaryToUInt64(rawFileNameAttribute[offsetParentRecordNumber : offsetParentRecordNumber+lengthParentRecordNumber])
+	filenameAttribute.ParentDirRecordNumber, _ = bin.LittleEndianBinaryToUInt32(rawFileNameAttribute[offsetParentRecordNumber : offsetParentRecordNumber+lengthParentRecordNumber])
 	filenameAttribute.parentDirSequenceNumber, _ = bin.LittleEndianBinaryToUInt16(rawFileNameAttribute[offsetParentDirSequenceNumber : offsetParentDirSequenceNumber+lengthParentDirSequenceNumber])
 	rawFnCreated := ts.RawTimestamp(rawFileNameAttribute[offsetFnCreated : offsetFnCreated+lengthFnCreated])
 	rawFnModified := ts.RawTimestamp(rawFileNameAttribute[offsetFnModified : offsetFnModified+lengthFnModified])

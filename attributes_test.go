@@ -84,7 +84,7 @@ func TestRawAttributes_Parse(t *testing.T) {
 					},
 					attributeSize:           104,
 					ParentDirRecordNumber:   5,
-					parentDirSequenceNumber: 0,
+					parentDirSequenceNumber: 5,
 					LogicalFileSize:         16384,
 					PhysicalFileSize:        16384,
 					FileNameFlags: FileNameFlags{
@@ -243,16 +243,16 @@ func TestRawAttributes_Parse(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(gotFileNameAttributes, tt.wantFileNameAttributes) {
-				t.Errorf("parse() gotFileNameAttributes = %v, want %v", gotFileNameAttributes, tt.wantFileNameAttributes)
+				t.Errorf("parse() \ngotFileNameAttributes = %v, \nwant %v", gotFileNameAttributes, tt.wantFileNameAttributes)
 			}
 			if !reflect.DeepEqual(gotStandardInformationAttribute, tt.wantStandardInformationAttribute) {
-				t.Errorf("parse() gotStandardInformationAttribute = %v, want %v", gotStandardInformationAttribute, tt.wantStandardInformationAttribute)
+				t.Errorf("parse() \ngotStandardInformationAttribute = %v, \nwant %v", gotStandardInformationAttribute, tt.wantStandardInformationAttribute)
 			}
 			if !reflect.DeepEqual(gotDataAttribute, tt.wantDataAttribute) {
-				t.Errorf("parse() gotDataAttribute = %v, want %v", gotDataAttribute, tt.wantDataAttribute)
+				t.Errorf("parse() \ngotDataAttribute = %v, \nwant %v", gotDataAttribute, tt.wantDataAttribute)
 			}
 			if !reflect.DeepEqual(gotAttributeListAttribute, tt.wantAttributeListAttribute) {
-				t.Errorf("parse() gotDataAttribute = %v, want %v", gotAttributeListAttribute, tt.wantAttributeListAttribute)
+				t.Errorf("parse() \ngotDataAttribute = %v, \nwant %v", gotAttributeListAttribute, tt.wantAttributeListAttribute)
 			}
 
 		})

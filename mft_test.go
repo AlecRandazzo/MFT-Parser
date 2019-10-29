@@ -76,7 +76,7 @@ func TestRawMasterFileTableRecord_Parse(t *testing.T) {
 						nameLength:              nameLength{},
 						attributeSize:           104,
 						ParentDirRecordNumber:   5,
-						parentDirSequenceNumber: 0,
+						parentDirSequenceNumber: 5,
 						LogicalFileSize:         16384,
 						PhysicalFileSize:        16384,
 						FileNameFlags: FileNameFlags{
@@ -193,7 +193,7 @@ func TestRawMasterFileTableRecord_Parse(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(gotMftRecord, tt.wantMftRecord) {
-				t.Errorf("parse() gotMftRecord = %v, want %v", gotMftRecord, tt.wantMftRecord)
+				t.Errorf("parse() \ngotMftRecord = %v\nwant %v", gotMftRecord, tt.wantMftRecord)
 			}
 		})
 	}
@@ -238,7 +238,7 @@ func TestGetUsefulMftFields(t *testing.T) {
 							nameLength:              nameLength{},
 							attributeSize:           104,
 							ParentDirRecordNumber:   5,
-							parentDirSequenceNumber: 0,
+							parentDirSequenceNumber: 5,
 							LogicalFileSize:         16384,
 							PhysicalFileSize:        16384,
 							FileNameFlags: FileNameFlags{
@@ -361,7 +361,7 @@ func TestGetUsefulMftFields(t *testing.T) {
 							nameLength:              nameLength{},
 							attributeSize:           104,
 							ParentDirRecordNumber:   5,
-							parentDirSequenceNumber: 0,
+							parentDirSequenceNumber: 5,
 							LogicalFileSize:         16384,
 							PhysicalFileSize:        16384,
 							FileNameFlags: FileNameFlags{

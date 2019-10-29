@@ -19,16 +19,16 @@ import (
 
 // UnResolvedDirectory type is used for creating a directory tree.
 type UnResolvedDirectory struct {
-	RecordNumber       uint64
+	RecordNumber       uint32
 	DirectoryName      string
-	ParentRecordNumber uint64
+	ParentRecordNumber uint32
 }
 
 // UnresolvedDirectoryTree contains a slice of directories that need to be joined to create a UnResolvedDirectory tree.
-type UnresolvedDirectoryTree map[uint64]UnResolvedDirectory
+type UnresolvedDirectoryTree map[uint32]UnResolvedDirectory
 
 // DirectoryTree contains a directory tree.
-type DirectoryTree map[uint64]string
+type DirectoryTree map[uint32]string
 
 // IsThisADirectory will quickly check the bytes of an MFT record to determine if it is a directory or not.
 func (rawMftRecord RawMasterFileTableRecord) IsThisADirectory() (result bool, err error) {
@@ -82,13 +82,12 @@ func ConvertRawMFTRecordToDirectory(rawMftRecord RawMasterFileTableRecord) (dire
 		err = fmt.Errorf("failed to get raw attributes: %w", err)
 		return
 	}
-	doesntMatter := int64(4096)
 
 	// Find the filename attribute and parse it for its record number, directory name, and parent record number.
-	fileNameAttributes, _, _, _, err := rawAttributes.Parse(doesntMatter)
+	fileNameAttributes, _, _, _, err := rawAttributes.Parse(int64(4096))
 	for _, fileNameAttribute := range fileNameAttributes {
 		if strings.Contains(fileNameAttribute.FileNamespace, "WIN32") == true || strings.Contains(fileNameAttribute.FileNamespace, "POSIX") {
-			directory.RecordNumber = uint64(recordHeader.RecordNumber)
+			directory.RecordNumber = recordHeader.RecordNumber
 			directory.DirectoryName = fileNameAttribute.FileName
 			directory.ParentRecordNumber = fileNameAttribute.ParentDirRecordNumber
 			break
