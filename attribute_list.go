@@ -53,8 +53,6 @@ func (rawAttributeListAttribute RawAttributeListAttribute) Parse() (attributeLis
 	for pointerToSubAttribute < sizeOfRawAttribute {
 		result := isThisAnAttribute(rawAttributeListAttribute[pointerToSubAttribute])
 		if result == false {
-			err = fmt.Errorf("RawAttributeListAttribute.Parse() encountered an invalid sub attribute with magic number %x", rawAttributeListAttribute[pointerToSubAttribute])
-			attributeListAttributes = AttributeListAttributes{}
 			return
 		}
 		attributeListAttribute := AttributeListAttribute{}
