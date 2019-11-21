@@ -12,8 +12,8 @@ package mft
 import (
 	"encoding/binary"
 	"errors"
-	bin "github.com/AlecRandazzo/BinaryTransforms"
-	ts "github.com/AlecRandazzo/Timestamp-Parser"
+	bin "github.com/Go-Forensics/BinaryTransforms"
+	ts "github.com/Go-Forensics/Timestamp-Parser"
 	"time"
 )
 

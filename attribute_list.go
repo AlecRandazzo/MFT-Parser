@@ -12,7 +12,7 @@ package mft
 import (
 	"errors"
 	"fmt"
-	bin "github.com/AlecRandazzo/BinaryTransforms"
+	bin "github.com/Go-Forensics/BinaryTransforms"
 )
 
 // RawAttributeListAttribute is a []byte alias for raw attribute list attributes. Used with the Parse() method
