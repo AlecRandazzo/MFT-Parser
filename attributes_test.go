@@ -86,7 +86,7 @@ func TestRawAttributes_Parse(t *testing.T) {
 					FnModified:   time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
 					FnAccessed:   time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
 					FnChanged:    time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
-					flagResident: true,
+					FlagResident: true,
 					nameLength: nameLength{
 						flagNamed: false,
 						namedSize: 0,
@@ -113,7 +113,7 @@ func TestRawAttributes_Parse(t *testing.T) {
 						Directory:         false,
 						IndexView:         false,
 					},
-					fileNameLength: 8,
+					FileNameLength: 8,
 					FileNamespace:  "WIN32 & DOS",
 					FileName:       "$MFT",
 				},
