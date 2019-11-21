@@ -29,8 +29,8 @@ type FileNameAttribute struct {
 	FnAccessed              time.Time
 	FnChanged               time.Time
 	FlagResident            bool
-	nameLength              nameLength
-	attributeSize           uint32
+	NameLength              NameLength
+	AttributeSize           uint32
 	ParentDirRecordNumber   uint32
 	parentDirSequenceNumber uint16
 	LogicalFileSize         uint64
@@ -41,9 +41,9 @@ type FileNameAttribute struct {
 	FileName                string
 }
 
-type nameLength struct {
-	flagNamed bool
-	namedSize byte
+type NameLength struct {
+	FlagNamed bool
+	NamedSize byte
 }
 
 // FileNameFlags contains possible filename flags a file may have.
@@ -128,7 +128,7 @@ func (rawFileNameAttribute RawFileNameAttribute) Parse() (filenameAttribute File
 		err = errors.New("parseFileNameAttribute(): non-resident filename Attribute encountered")
 		return
 	}
-	filenameAttribute.attributeSize, _ = bin.LittleEndianBinaryToUInt32(rawFileNameAttribute[offsetAttributeSize : offsetAttributeSize+lengthAttributeSize])
+	filenameAttribute.AttributeSize, _ = bin.LittleEndianBinaryToUInt32(rawFileNameAttribute[offsetAttributeSize : offsetAttributeSize+lengthAttributeSize])
 	filenameAttribute.ParentDirRecordNumber, _ = bin.LittleEndianBinaryToUInt32(rawFileNameAttribute[offsetParentRecordNumber : offsetParentRecordNumber+lengthParentRecordNumber])
 	filenameAttribute.parentDirSequenceNumber, _ = bin.LittleEndianBinaryToUInt16(rawFileNameAttribute[offsetParentDirSequenceNumber : offsetParentDirSequenceNumber+lengthParentDirSequenceNumber])
 	rawFnCreated := ts.RawTimestamp(rawFileNameAttribute[offsetFnCreated : offsetFnCreated+lengthFnCreated])

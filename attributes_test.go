@@ -87,11 +87,11 @@ func TestRawAttributes_Parse(t *testing.T) {
 					FnAccessed:   time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
 					FnChanged:    time.Date(2016, 7, 2, 15, 13, 30, 670820200, time.UTC),
 					FlagResident: true,
-					nameLength: nameLength{
-						flagNamed: false,
-						namedSize: 0,
+					NameLength: NameLength{
+						FlagNamed: false,
+						NamedSize: 0,
 					},
-					attributeSize:           104,
+					AttributeSize:           104,
 					ParentDirRecordNumber:   5,
 					parentDirSequenceNumber: 5,
 					LogicalFileSize:         16384,
