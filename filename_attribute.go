@@ -28,7 +28,7 @@ type FileNameAttribute struct {
 	FnModified              time.Time
 	FnAccessed              time.Time
 	FnChanged               time.Time
-	flagResident            bool
+	FlagResident            bool
 	nameLength              nameLength
 	attributeSize           uint32
 	ParentDirRecordNumber   uint32
@@ -36,7 +36,7 @@ type FileNameAttribute struct {
 	LogicalFileSize         uint64
 	PhysicalFileSize        uint64
 	FileNameFlags           FileNameFlags
-	fileNameLength          byte
+	FileNameLength          byte
 	FileNamespace           string
 	FileName                string
 }
@@ -123,8 +123,8 @@ func (rawFileNameAttribute RawFileNameAttribute) Parse() (filenameAttribute File
 	}
 
 	rawResidencyFlag := RawResidencyFlag(rawFileNameAttribute[offsetResidentFlag])
-	filenameAttribute.flagResident = rawResidencyFlag.Parse()
-	if filenameAttribute.flagResident == false {
+	filenameAttribute.FlagResident = rawResidencyFlag.Parse()
+	if filenameAttribute.FlagResident == false {
 		err = errors.New("parseFileNameAttribute(): non-resident filename Attribute encountered")
 		return
 	}
@@ -143,10 +143,10 @@ func (rawFileNameAttribute RawFileNameAttribute) Parse() (filenameAttribute File
 	filenameAttribute.PhysicalFileSize, _ = bin.LittleEndianBinaryToUInt64(rawFileNameAttribute[offSetPhysicalFileSize : offSetPhysicalFileSize+lengthPhysicalFileSize])
 	flagBytes := RawFilenameFlags(rawFileNameAttribute[offsetFnFlags : offsetFnFlags+lengthFnFlags])
 	filenameAttribute.FileNameFlags = flagBytes.Parse()
-	filenameAttribute.fileNameLength = rawFileNameAttribute[offsetFileNameLength] * 2 // times two to account for unicode characters
+	filenameAttribute.FileNameLength = rawFileNameAttribute[offsetFileNameLength] * 2 // times two to account for unicode characters
 	rawFilenameNameSpaceFlag := RawFilenameNameSpaceFlag(rawFileNameAttribute[offsetFileNameSpace])
 	filenameAttribute.FileNamespace = rawFilenameNameSpaceFlag.Parse()
-	filenameAttribute.FileName, _ = bin.UnicodeBytesToASCII(rawFileNameAttribute[offsetFileName : offsetFileName+int(filenameAttribute.fileNameLength)])
+	filenameAttribute.FileName, _ = bin.UnicodeBytesToASCII(rawFileNameAttribute[offsetFileName : offsetFileName+int(filenameAttribute.FileNameLength)])
 	return
 }
 
