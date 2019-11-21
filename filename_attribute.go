@@ -32,7 +32,7 @@ type FileNameAttribute struct {
 	NameLength              NameLength
 	AttributeSize           uint32
 	ParentDirRecordNumber   uint32
-	parentDirSequenceNumber uint16
+	ParentDirSequenceNumber uint16
 	LogicalFileSize         uint64
 	PhysicalFileSize        uint64
 	FileNameFlags           FileNameFlags
@@ -130,7 +130,7 @@ func (rawFileNameAttribute RawFileNameAttribute) Parse() (filenameAttribute File
 	}
 	filenameAttribute.AttributeSize, _ = bin.LittleEndianBinaryToUInt32(rawFileNameAttribute[offsetAttributeSize : offsetAttributeSize+lengthAttributeSize])
 	filenameAttribute.ParentDirRecordNumber, _ = bin.LittleEndianBinaryToUInt32(rawFileNameAttribute[offsetParentRecordNumber : offsetParentRecordNumber+lengthParentRecordNumber])
-	filenameAttribute.parentDirSequenceNumber, _ = bin.LittleEndianBinaryToUInt16(rawFileNameAttribute[offsetParentDirSequenceNumber : offsetParentDirSequenceNumber+lengthParentDirSequenceNumber])
+	filenameAttribute.ParentDirSequenceNumber, _ = bin.LittleEndianBinaryToUInt16(rawFileNameAttribute[offsetParentDirSequenceNumber : offsetParentDirSequenceNumber+lengthParentDirSequenceNumber])
 	rawFnCreated := ts.RawTimestamp(rawFileNameAttribute[offsetFnCreated : offsetFnCreated+lengthFnCreated])
 	rawFnModified := ts.RawTimestamp(rawFileNameAttribute[offsetFnModified : offsetFnModified+lengthFnModified])
 	rawFnChanged := ts.RawTimestamp(rawFileNameAttribute[offsetFnChanged : offsetFnChanged+lengthFnChanged])
