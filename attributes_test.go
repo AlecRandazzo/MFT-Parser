@@ -93,7 +93,7 @@ func TestRawAttributes_Parse(t *testing.T) {
 					},
 					AttributeSize:           104,
 					ParentDirRecordNumber:   5,
-					parentDirSequenceNumber: 5,
+					ParentDirSequenceNumber: 5,
 					LogicalFileSize:         16384,
 					PhysicalFileSize:        16384,
 					FileNameFlags: FileNameFlags{

@@ -85,7 +85,7 @@ func TestRawMasterFileTableRecord_Parse(t *testing.T) {
 						NameLength:              NameLength{},
 						AttributeSize:           104,
 						ParentDirRecordNumber:   5,
-						parentDirSequenceNumber: 5,
+						ParentDirSequenceNumber: 5,
 						LogicalFileSize:         16384,
 						PhysicalFileSize:        16384,
 						FileNameFlags: FileNameFlags{
@@ -247,7 +247,7 @@ func TestGetUsefulMftFields(t *testing.T) {
 							NameLength:              NameLength{},
 							AttributeSize:           104,
 							ParentDirRecordNumber:   5,
-							parentDirSequenceNumber: 5,
+							ParentDirSequenceNumber: 5,
 							LogicalFileSize:         16384,
 							PhysicalFileSize:        16384,
 							FileNameFlags: FileNameFlags{
@@ -370,7 +370,7 @@ func TestGetUsefulMftFields(t *testing.T) {
 							NameLength:              NameLength{},
 							AttributeSize:           104,
 							ParentDirRecordNumber:   5,
-							parentDirSequenceNumber: 5,
+							ParentDirSequenceNumber: 5,
 							LogicalFileSize:         16384,
 							PhysicalFileSize:        16384,
 							FileNameFlags: FileNameFlags{
