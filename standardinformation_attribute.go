@@ -4,7 +4,7 @@ package mft
 
 import (
 	"errors"
-	ts "github.com/Go-Forensics/Timestamp-Parser"
+	ts "github.com/AlecRandazzo/Timestamp-Parser"
 	"time"
 )
 

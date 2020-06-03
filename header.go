@@ -5,7 +5,7 @@ package mft
 import (
 	"errors"
 	"fmt"
-	bin "github.com/Go-Forensics/BinaryTransforms"
+	bin "github.com/AlecRandazzo/BinaryTransforms"
 )
 
 // RawRecordHeader is a []byte alias for raw record header. Used with the Parse() method.
