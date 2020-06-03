@@ -5,7 +5,7 @@ package mft
 import (
 	"errors"
 	"fmt"
-	bin "github.com/Go-Forensics/BinaryTransforms"
+	bin "github.com/AlecRandazzo/BinaryTransforms"
 	"strconv"
 )
 

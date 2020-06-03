@@ -1,3 +1,7 @@
+github.com/AlecRandazzo/BinaryTransforms v1.3.5 h1:Nbx54afOidnnYmth92R7YJtfZLc7vuXh1IVEAlmms1I=
+github.com/AlecRandazzo/BinaryTransforms v1.3.5/go.mod h1:a+Gn6CWbYTn1I7ZTr1xI0HoW9cvYBshuS7t7vvCEhF0=
+github.com/AlecRandazzo/Timestamp-Parser v1.4.3 h1:RC42wi1506BrA2QHh+OeGBIvKufCZDurhlKzOmig00A=
+github.com/AlecRandazzo/Timestamp-Parser v1.4.3/go.mod h1:ZXLMmRQYV7MhuEIeB9leqr60N47Pq7lAp0CBtYUY/UY=
 github.com/Go-Forensics/BinaryTransforms v1.3.3 h1:W5ya4DS4hhjGE2DnrL7H5GpYu3pTCN8zwRI45Ltnklo=
 github.com/Go-Forensics/BinaryTransforms v1.3.3/go.mod h1:5WYD8lkQ4ISk9RSdHsB0pVl9RlAvw3NJQquWrLu2QV0=
 github.com/Go-Forensics/Timestamp-Parser v1.4.2 h1:EfuxxB3bf6i7DZJMKera6QBjR6NZC/38jrmxgWtyi1A=
